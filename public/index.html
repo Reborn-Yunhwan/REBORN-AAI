@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>리본 AI 판정기</title>
+<style>
+
+:root{--green:#00C473;--green-d:#009E5B;--green-l:#E6FAF3;--navy:#0D1B2A;--gray:#F5F7FA;--border:#E2E8F0;--text:#1A202C;--texts:#4A5568;--textm:#94A3B8;--r:16px;--rs:10px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(--gray);color:var(--text);min-height:100vh}
+.hd{background:#fff;border-bottom:1px solid var(--border);height:60px;padding:0 20px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,.06)}
+.hd-mark{width:32px;height:32px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:18px}
+.hd-name{font-weight:800;font-size:18px;color:var(--navy)}
+.hd-name span{color:var(--green)}
+.stepbar{background:#fff;border-bottom:1px solid var(--border);padding:11px 14px;display:flex;align-items:center;overflow-x:auto;gap:0;scrollbar-width:none}
+.stepbar::-webkit-scrollbar{display:none}
+.si{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.sd{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;border:2px solid var(--border);color:var(--textm);background:#fff;transition:all .25s}
+.sd.act{background:var(--green);border-color:var(--green);color:#fff;box-shadow:0 0 0 3px rgba(0,196,115,.2)}
+.sd.done{background:var(--green-l);border-color:var(--green);color:var(--green-d)}
+.sl{font-size:10px;color:var(--texts);font-weight:500;white-space:nowrap}
+.sl.act{color:var(--green-d);font-weight:700}
+.sdiv{flex:1;min-width:8px;height:1px;background:var(--border);margin:0 2px}
+.pg{max-width:520px;margin:0 auto;padding:22px 16px 80px}
+.card{background:#fff;border-radius:var(--r);padding:22px 18px;border:1px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:13px}
+.card-t{font-size:19px;font-weight:800;margin-bottom:5px}
+.card-s{font-size:13px;color:var(--texts);line-height:1.6;margin-bottom:18px}
+.hero{background:linear-gradient(135deg,var(--navy) 0%,#1a3a52 100%);border-radius:var(--r);padding:34px 22px;color:#fff;text-align:center;margin-bottom:13px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:rgba(0,196,115,.12)}
+.hero-badge{display:inline-block;background:rgba(0,196,115,.2);border:1px solid rgba(0,196,115,.4);color:#6EF4BE;font-size:10px;font-weight:700;letter-spacing:1.5px;padding:3px 10px;border-radius:20px;margin-bottom:12px;position:relative;z-index:1}
+.hero h1{font-size:22px;font-weight:900;line-height:1.35;margin-bottom:9px;position:relative;z-index:1}
+.hero h1 em{color:var(--green);font-style:normal}
+.hero p{font-size:12px;color:rgba(255,255,255,.7);line-height:1.6;position:relative;z-index:1;margin-bottom:22px}
+.btn-cta{background:var(--green);color:#fff;border:none;border-radius:12px;padding:14px 0;font-size:15px;font-weight:800;cursor:pointer;width:100%;box-shadow:0 4px 14px rgba(0,196,115,.4);transition:all .2s;position:relative;z-index:1}
+.btn-cta:hover{background:var(--green-d)}
+.ig{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:13px}
+.ic{background:#fff;border-radius:var(--rs);padding:14px 12px;border:1px solid var(--border)}
+.ic-ico{font-size:20px;margin-bottom:5px}
+.ic h3{font-size:12px;font-weight:700;margin-bottom:2px}
+.ic p{font-size:11px;color:var(--texts);line-height:1.4}
+.gr-row{background:#fff;border-radius:var(--rs);padding:13px;border:1px solid var(--border);margin-bottom:13px}
+.gr-row h3{font-size:12px;font-weight:700;color:var(--texts);margin-bottom:9px}
+.gr-badges{display:flex;gap:5px;flex-wrap:wrap}
+.gr-badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.frow{margin-bottom:13px}
+.flabel{font-size:13px;font-weight:600;color:var(--texts);margin-bottom:5px;display:block}
+.finput{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;font-size:14px;outline:none;transition:border-color .2s;background:#fff;font-family:inherit}
+.finput:focus{border-color:var(--green)}
+.fselect{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;font-size:14px;outline:none;background:#fff;cursor:pointer;font-family:inherit}
+.fselect:focus{border-color:var(--green)}
+.btn-p{background:var(--green);color:#fff;border:none;border-radius:12px;padding:13px 0;font-size:14px;font-weight:700;cursor:pointer;width:100%;transition:all .2s;font-family:inherit}
+.btn-p:hover{background:var(--green-d)}
+.btn-p:disabled{background:var(--textm);cursor:not-allowed}
+.btn-sk{background:#fff;color:var(--texts);border:1.5px solid var(--border);border-radius:12px;padding:11px 0;font-size:13px;font-weight:600;cursor:pointer;width:100%;transition:all .2s;font-family:inherit}
+.btn-sk:hover{border-color:var(--green);color:var(--green-d)}
+.mc{border:2px solid var(--border);border-radius:var(--rs);padding:16px 14px;cursor:pointer;transition:all .2s;margin-bottom:9px;display:flex;align-items:center;gap:13px}
+.mc:hover,.mc.sel{border-color:var(--green);background:var(--green-l)}
+.mc-ico{font-size:28px;flex-shrink:0}
+.mc-info h4{font-size:13px;font-weight:700;margin-bottom:3px}
+.mc-info p{font-size:11px;color:var(--texts);line-height:1.4}
+.mc-badge{margin-left:auto;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;flex-shrink:0}
+.uz{border:2px dashed var(--border);border-radius:var(--rs);padding:20px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:9px}
+.uz:hover{border-color:var(--green);background:var(--green-l)}
+.uz-ico{font-size:28px;margin-bottom:5px}
+.uz h4{font-size:13px;font-weight:700;margin-bottom:3px}
+.uz p{font-size:11px;color:var(--texts)}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:9px}
+.pt{aspect-ratio:1;border-radius:8px;overflow:hidden;position:relative;background:#eee}
+.pt img{width:100%;height:100%;object-fit:cover}
+.pt-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
+.pt-add{border:2px dashed #ccc;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;color:#aaa;background:#f9f9f9;aspect-ratio:1;border-radius:8px}
+.hint{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:9px 11px;font-size:11px;color:#1E40AF;margin-bottom:11px;line-height:1.5}
+.api-row{display:flex;gap:6px;margin-bottom:11px}
+.api-in{flex:1;border:1.5px solid var(--border);border-radius:10px;padding:10px 11px;font-size:12px;font-family:monospace;outline:none}
+.api-in:focus{border-color:var(--green)}
+.api-btn{background:var(--green-l);color:var(--green-d);border:1px solid var(--green);border-radius:10px;padding:10px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit}
+.al{border-radius:9px;padding:9px 12px;font-size:12px;margin-bottom:11px;display:flex;align-items:flex-start;gap:7px;line-height:1.5}
+.al-info{background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE}
+.al-warn{background:#FFFBEB;color:#92400E;border:1px solid #FCD34D}
+.al-err{background:#FEF2F2;color:#991B1B;border:1px solid #FECACA}
+.al-ok{background:var(--green-l);color:var(--green-d);border:1px solid var(--green)}
+.al-lock{background:#FFF7ED;color:#92400E;border:1.5px solid #F97316;border-radius:10px;padding:13px 15px;font-size:13px;margin-bottom:13px;line-height:1.6}
+.ov{position:fixed;inset:0;background:rgba(13,27,42,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;color:#fff;gap:13px}
+.spin{width:46px;height:46px;border:4px solid rgba(255,255,255,.15);border-top-color:var(--green);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.rg-card{border-radius:var(--r);padding:24px 18px;text-align:center;margin-bottom:13px}
+.rg-name{font-size:32px;font-weight:900;margin-bottom:3px}
+.rg-ko{font-size:13px;font-weight:600;opacity:.75;margin-bottom:12px}
+.rg-conf{display:inline-block;background:rgba(0,0,0,.08);padding:3px 11px;border-radius:20px;font-size:11px;font-weight:700}
+.pt-mini{display:flex;gap:6px;overflow-x:auto;padding-bottom:3px;margin-bottom:13px}
+.pt-mini img{width:64px;height:64px;object-fit:cover;border-radius:7px;flex-shrink:0;border:2px solid var(--border)}
+.di-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.di-row:last-child{border-bottom:none}
+.di-label{color:var(--texts)}
+.di-val{font-weight:600;text-align:right;max-width:65%;word-break:break-all}
+.imei-val{font-family:monospace;font-size:12px;background:#F8FAFC;padding:2px 6px;border-radius:4px;border:1px solid var(--border)}
+.ptable{width:100%;border-collapse:collapse}
+.ptable tr{border-bottom:1px solid var(--border)}
+.ptable tr:last-child{border-bottom:none}
+.ptable td{padding:9px 0;font-size:13px}
+.ptable td:last-child{text-align:right;font-weight:700}
+.jbox{background:var(--gray);border-radius:var(--rs);padding:13px;font-size:12px;color:var(--texts);line-height:1.7;border-left:3px solid var(--green)}
+.area-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.area-item{border-radius:8px;padding:10px 12px;border:1px solid var(--border);font-size:12px}
+.area-item-t{font-weight:700;margin-bottom:3px;font-size:11px}
+.area-item-s{font-size:11px;color:var(--texts)}
+.status-clean{border-left:3px solid var(--green);background:var(--green-l)}
+.status-minor{border-left:3px solid #F59E0B;background:#FFFBEB}
+.status-notable{border-left:3px solid #EF4444;background:#FEF2F2}
+.dp-box{background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:11px 13px;font-size:12px;margin-bottom:11px;line-height:1.6}
+.dp-step{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px}
+.dp-stop{color:var(--green);font-weight:700}
+.vbadge{display:flex;align-items:center;gap:8px;padding:10px 13px;background:var(--green-l);border:1px solid var(--green);border-radius:10px;font-size:13px;font-weight:700;color:var(--green-d);margin-bottom:13px}
+.bb{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);padding:10px 16px;display:flex;gap:8px;z-index:99;box-shadow:0 -4px 20px rgba(0,0,0,.08)}
+.bb .btn-p{flex:2}
+.bb .btn-sk{flex:1}
+
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+// ── 등급 설정 ──
+var GC = {
+  Excellent:  {ko:'최상',  color:'#7C3AED', bg:'#F5F3FF', emoji:'✨'},
+  'Very Good':{ko:'우수',  color:'#059669', bg:'#ECFDF5', emoji:'💚'},
+  Good:       {ko:'양호',  color:'#2563EB', bg:'#EFF6FF', emoji:'💙'},
+  Normal:     {ko:'보통',  color:'#D97706', bg:'#FFFBEB', emoji:'🟡'},
+  Bad:        {ko:'미흡',  color:'#DC2626', bg:'#FEF2F2', emoji:'🔴'},
+  '검수불가': {ko:'검수불가',color:'#64748B',bg:'#F1F5F9', emoji:'⛔'},
+};
+
+// ── 매입가 ──
+var PRICES = {
+  'Galaxy S24':       {Excellent:680000,'Very Good':580000,Good:460000,Normal:340000,Bad:140000},
+  'Galaxy S24 Ultra': {Excellent:980000,'Very Good':840000,Good:680000,Normal:460000,Bad:180000},
+  'Galaxy S23':       {Excellent:520000,'Very Good':440000,Good:350000,Normal:240000,Bad:100000},
+  'Galaxy S23 Ultra': {Excellent:720000,'Very Good':620000,Good:500000,Normal:340000,Bad:140000},
+  'Galaxy A55':       {Excellent:320000,'Very Good':270000,Good:210000,Normal:140000,Bad:60000},
+  'iPhone 16':        {Excellent:920000,'Very Good':780000,Good:620000,Normal:420000,Bad:170000},
+  'iPhone 15 Pro Max':{Excellent:1100000,'Very Good':940000,Good:760000,Normal:520000,Bad:210000},
+  'iPhone 15 Pro':    {Excellent:980000,'Very Good':840000,Good:680000,Normal:460000,Bad:180000},
+  'iPhone 15':        {Excellent:780000,'Very Good':660000,Good:520000,Normal:360000,Bad:150000},
+  'iPhone 14':        {Excellent:620000,'Very Good':520000,Good:410000,Normal:280000,Bad:110000},
+  'iPhone 13':        {Excellent:480000,'Very Good':400000,Good:320000,Normal:220000,Bad:90000},
+};
+
+function fmt(n){ return n ? n.toLocaleString()+'원' : '문의'; }
+
+var CARRIERS = ['SKT','KT','LGU+','SKT 알뜰폰','KT 알뜰폰','LGU+ 알뜰폰','기타'];
+var STEPS = ['소개','1차 인증','촬영방식','사진업로드','2차 인증','판정결과'];
+var AREA_LABELS = {front:'전면(액정)',back:'후면',bezel_side:'베젤/측면',camera:'카메라'};
+var AREA_STATUS = {clean:'양호',minor:'미세손상',notable:'손상있음'};
+
+var h = React.createElement;
+var useState = React.useState;
+var useRef = React.useRef;
+
+// ── 헤더 ──
+function Header() {
+  return h('header', {className:'hd'},
+    h('div', {className:'hd-mark'}, 'R'),
+    h('div', {className:'hd-name'}, h('span',null,'리본'), ' AI 판정기')
+  );
+}
+
+// ── 스텝바 ──
+function StepBar(props) {
+  var cur = props.cur;
+  var items = [];
+  for(var i=0;i<STEPS.length;i++){
+    items.push(
+      h('div',{className:'si',key:i},
+        h('div',{className:'sd'+(i<cur?' done':i===cur?' act':'')}, i<cur?'✓':String(i+1)),
+        h('span',{className:'sl'+(i===cur?' act':'')}, STEPS[i])
+      )
+    );
+    if(i<STEPS.length-1) items.push(h('div',{className:'sdiv',key:'d'+i}));
+  }
+  return h('div',{className:'stepbar'}, items);
+}
+
+// ── 1. 랜딩 ──
+function Landing(props) {
+  return h('div',{className:'pg'},
+    h('div',{className:'hero'},
+      h('div',{className:'hero-badge'}, 'KT M&S · 리본 사업팀'),
+      h('h1',null,'중고폰을', h('br'), h('em',null,'AI가 정확하게'), ' 판정합니다'),
+      h('p',null,'사진 몇 장으로 등급과 예상 매입가를',h('br'),'바로 확인해보세요. 최소 30초.'),
+      h('button',{className:'btn-cta',onClick:props.onNext}, '📱  지금 바로 접수하기')
+    ),
+    h('div',{className:'ig'},
+      [['🤖','AI 자동 판정','33,000건 실거래 데이터 학습'],
+       ['⚡','30초 결과','사진 업로드 후 즉시 확인'],
+       ['📸','MRI 촬영 지원','MRI·직접 촬영 모두 지원'],
+       ['💰','5등급 매입가','등급별 예상 금액 바로 확인']
+      ].map(function(c){return h('div',{className:'ic',key:c[1]},
+        h('div',{className:'ic-ico'},c[0]),h('h3',null,c[1]),h('p',null,c[2])
+      );})
+    ),
+    h('div',{className:'gr-row'},
+      h('h3',null,'📊 리본 5단계 등급'),
+      h('div',{className:'gr-badges'},
+        Object.entries(GC).filter(function(e){return e[0]!=='검수불가';}).map(function(e){
+          return h('span',{className:'gr-badge',key:e[0],style:{background:e[1].bg,color:e[1].color}},
+            e[1].emoji+' '+e[0]
+          );
+        })
+      )
+    )
+  );
+}
+
+// ── 2. 1차 본인인증 ──
+function Auth1(props) {
+  var s1=useState('');var name=s1[0],setName=s1[1];
+  var s2=useState('');var carrier=s2[0],setCarrier=s2[1];
+  var s3=useState('');var phone=s3[0],setPhone=s3[1];
+  var s4=useState('');var err=s4[0],setErr=s4[1];
+  var valid = name.trim() && carrier && phone.replace(/\D/g,'').length>=10;
+  function submit(){
+    if(!valid){setErr('이름, 통신사, 연락처를 모두 입력해주세요.');return;}
+    props.onDone({name:name.trim(),carrier:carrier,phone:phone.trim()});
+  }
+  return h('div',{className:'pg',style:{paddingBottom:'90px'}},
+    h('div',{className:'card'},
+      h('div',{className:'card-t'},'본인 인증 ',h('span',{style:{fontSize:'13px',color:'#94A3B8',fontWeight:'500'}},'(1차)')),
+      h('div',{className:'card-s'},
+        '이름, 통신사, 연락처를 입력하여 본인 확인을 진행합니다.',h('br'),
+        h('strong',{style:{color:'#D97706'}},'지금 건너뛰셔도 괜찮습니다.'),
+        ' 사진 업로드 후 결과 확인 전 단계에서 다시 인증하실 수 있습니다.'
+      ),
+      h('div',{className:'frow'},h('label',{className:'flabel'},'이름'),
+        h('input',{className:'finput',placeholder:'홍길동',value:name,onChange:function(e){setName(e.target.value);}})),
+      h('div',{className:'frow'},h('label',{className:'flabel'},'통신사'),
+        h('select',{className:'fselect',value:carrier,onChange:function(e){setCarrier(e.target.value);}},
+          h('option',{value:''},'통신사 선택'),
+          CARRIERS.map(function(c){return h('option',{key:c,value:c},c);})
+        )),
+      h('div',{className:'frow'},h('label',{className:'flabel'},'연락처'),
+        h('input',{className:'finput',placeholder:'010-0000-0000',value:phone,inputMode:'tel',onChange:function(e){setPhone(e.target.value);}})),
+      err && h('div',{className:'al al-err'},'⚠️ '+err)
+    ),
+    h('div',{className:'bb'},
+      h('button',{className:'btn-sk',onClick:props.onSkip},'건너뛰기 →'),
+      h('button',{className:'btn-p',onClick:submit,disabled:!valid},'인증 완료')
+    )
+  );
+}
+
+// ── 3. 촬영방식 ──
+function Method(props) {
+  var s=useState(null);var sel=s[0],setSel=s[1];
+  return h('div',{className:'pg',style:{paddingBottom:'90px'}},
+    h('div',{className:'card'},
+      h('div',{className:'card-t'},'촬영 방식 선택'),
+      h('div',{className:'card-s'},'단말기를 어떤 방식으로 촬영하셨나요?'),
+      [['mri','🔬','MRI기기 촬영','MRI 전용 장비로 촬영한 사진입니다. 조명 반사를 AI가 자동 구분합니다.','권장','#EFF6FF','#2563EB'],
+       ['direct','📱','직접 촬영','스마트폰 등으로 직접 촬영한 사진입니다. 밝은 조명에서 선명하게 촬영해주세요.','일반','#F5F3FF','#7C3AED']
+      ].map(function(m){
+        return h('div',{key:m[0],className:'mc'+(sel===m[0]?' sel':''),onClick:function(){setSel(m[0]);}},
+          h('div',{className:'mc-ico'},m[1]),
+          h('div',{className:'mc-info'},h('h4',null,m[2]),h('p',null,m[3])),
+          h('span',{className:'mc-badge',style:{background:m[5],color:m[6]}},m[4])
+        );
+      })
+    ),
+    h('div',{className:'bb'},
+      h('button',{className:'btn-p',disabled:!sel,onClick:function(){props.onSelect(sel);}},'다음 단계 →')
+    )
+  );
+}
+
+// ── 4. 사진업로드 ──
+function Upload(props) {
+  var s1=useState([]);var photos=s1[0],setPhotos=s1[1];
+  var s4=useState(false);var analyzing=s4[0],setAnalyzing=s4[1];
+  var s5=useState('');var err=s5[0],setErr=s5[1];
+  var fileRef=useRef(null);
+
+  function addFiles(files){
+    var arr=Array.from(files).filter(function(f){return f.type.indexOf('image/')===0;});
+    if(photos.length+arr.length>10){setErr('최대 10장까지 업로드 가능합니다.');return;}
+    setErr('');
+    arr.forEach(function(file){
+      var r=new FileReader();
+      r.onload=function(e){setPhotos(function(prev){return prev.concat([{file:file,url:e.target.result,b64:e.target.result.split(',')[1]}]);});};
+      r.readAsDataURL(file);
+    });
+  }
+
+  function go(){
+    if(!photos.length){setErr('사진을 1장 이상 업로드해주세요.');return;}
+    setErr('');setAnalyzing(true);
+
+    fetch('/api/grade',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({images:photos.map(function(p){return {media_type:p.file.type,data:p.b64};}),method:props.method}),
+    })
+    .then(function(res){return res.json().then(function(d){return {ok:res.ok,data:d};});})
+    .then(function(r){
+      if(!r.ok) throw new Error(r.data.error||'판정 오류');
+      props.onResult(r.data,photos);
+    })
+    .catch(function(e){setErr('판정 오류: '+e.message);})
+    .finally(function(){setAnalyzing(false);});
+  }
+
+  var photoArea;
+  if(photos.length>0){
+    var cells=photos.map(function(p,i){
+      return h('div',{key:i,className:'pt'},
+        h('img',{src:p.url,alt:'p'}),
+        h('button',{className:'pt-del',onClick:function(){setPhotos(function(prev){return prev.filter(function(_,j){return j!==i;});});}}, '✕')
+      );
+    });
+    if(photos.length<10) cells.push(h('div',{key:'add',className:'pt-add',onClick:function(){fileRef.current&&fileRef.current.click();}},'+'));
+    photoArea=h('div',{className:'pgrid'},cells);
+  } else {
+    photoArea=h('div',{className:'uz',
+      onClick:function(){fileRef.current&&fileRef.current.click();},
+      onDrop:function(e){e.preventDefault();addFiles(e.dataTransfer.files);},
+      onDragOver:function(e){e.preventDefault();}
+    },
+      h('div',{className:'uz-ico'},'📷'),
+      h('h4',null,'사진을 끌어다 놓거나 클릭하여 선택'),
+      h('p',null,'JPG, PNG 지원 · 최대 10장')
+    );
+  }
+
+  return h('div',{className:'pg',style:{paddingBottom:'90px'}},
+    analyzing&&h('div',{className:'ov'},
+      h('div',{className:'spin'}),
+      h('div',{style:{fontSize:'15px',fontWeight:'700'}},'AI가 사진을 분석하고 있습니다'),
+      h('div',{style:{fontSize:'12px',color:'rgba(255,255,255,.6)'}},'잠시만 기다려주세요 (약 10~30초)')
+    ),
+    h('div',{className:'card'},
+      h('div',{className:'card-t'},'사진 업로드'),
+      h('div',{className:'card-s'},(props.method==='mri'?'🔬 MRI기기 촬영':'📱 직접 촬영')+' · 최대 10장'),
+      h('div',{className:'hint'},'💡 전면(화면), 후면, 측면(4방향), 카메라, 기기정보(설정→일반→정보) 화면을 포함하면 IMEI·배터리까지 자동 추출됩니다.'),
+      photoArea,
+      h('input',{type:'file',ref:fileRef,accept:'image/*',multiple:true,style:{display:'none'},onChange:function(e){addFiles(e.target.files);}})
+    ),
+
+    err&&h('div',{className:'al al-err'},'⚠️ '+err),
+    h('div',{className:'bb'},
+      h('button',{className:'btn-p',disabled:!photos.length||analyzing,onClick:go},'🤖 AI 판정 시작')
+    )
+  );
+}
+
+// ── 5. 2차 본인인증 ──
+function Auth2(props) {
+  var s1=useState(props.auth1Info?props.auth1Info.name:'');var name=s1[0],setName=s1[1];
+  var s2=useState(props.auth1Info?props.auth1Info.carrier:'');var carrier=s2[0],setCarrier=s2[1];
+  var s3=useState(props.auth1Info?props.auth1Info.phone:'');var phone=s3[0],setPhone=s3[1];
+  var s4=useState('');var err=s4[0],setErr=s4[1];
+
+  if(props.auth1Done){
+    return h('div',{className:'pg',style:{paddingBottom:'90px'}},
+      h('div',{className:'card'},
+        h('div',{className:'card-t'},'본인 인증 ',h('span',{style:{fontSize:'13px',color:'#94A3B8',fontWeight:'500'}},'(2차)')),
+        h('div',{className:'card-s'},'1차 인증이 완료되어 있습니다. 바로 결과를 확인하세요.'),
+        h('div',{className:'vbadge'},'✅ '+props.auth1Info.name+' ('+props.auth1Info.carrier+' · '+props.auth1Info.phone+') — 인증 완료')
+      ),
+      h('div',{className:'bb'},
+        h('button',{className:'btn-p',onClick:function(){props.onDone(props.auth1Info);}},'판정 결과 보기 →')
+      )
+    );
+  }
+
+  var valid=name.trim()&&carrier&&phone.replace(/\D/g,'').length>=10;
+  function submit(){
+    if(!valid){setErr('이름, 통신사, 연락처를 모두 입력해주세요.');return;}
+    props.onDone({name:name.trim(),carrier:carrier,phone:phone.trim()});
+  }
+
+  return h('div',{className:'pg',style:{paddingBottom:'90px'}},
+    h('div',{className:'al-lock'},'🔒 ',h('strong',null,'판정 결과를 확인하려면 본인 인증이 필요합니다.'),h('br'),'앞 단계에서 인증을 건너뛰셨습니다. 결과 열람을 위해 아래에서 인증을 완료해주세요.'),
+    h('div',{className:'card'},
+      h('div',{className:'card-t'},'본인 인증 ',h('span',{style:{fontSize:'13px',color:'#DC2626',fontWeight:'600'}},'(2차 · 필수)')),
+      h('div',{className:'card-s'},'이름, 통신사, 연락처를 입력해주세요.'),
+      h('div',{className:'frow'},h('label',{className:'flabel'},'이름'),
+        h('input',{className:'finput',placeholder:'홍길동',value:name,onChange:function(e){setName(e.target.value);}})),
+      h('div',{className:'frow'},h('label',{className:'flabel'},'통신사'),
+        h('select',{className:'fselect',value:carrier,onChange:function(e){setCarrier(e.target.value);}},
+          h('option',{value:''},'통신사 선택'),
+          CARRIERS.map(function(c){return h('option',{key:c,value:c},c);})
+        )),
+      h('div',{className:'frow'},h('label',{className:'flabel'},'연락처'),
+        h('input',{className:'finput',placeholder:'010-0000-0000',value:phone,inputMode:'tel',onChange:function(e){setPhone(e.target.value);}})),
+      err&&h('div',{className:'al al-err'},'⚠️ '+err)
+    ),
+    h('div',{className:'bb'},
+      h('button',{className:'btn-p',disabled:!valid,onClick:submit},'인증 완료 후 결과 보기')
+    )
+  );
+}
+
+// ── 6. 판정 결과 ──
+function Result(props) {
+  var result=props.result,photos=props.photos,authInfo=props.authInfo;
+  var grade=result.final_grade||'';
+  var cfg=GC[grade]||{ko:grade,color:'#64748B',bg:'#F1F5F9',emoji:'❓'};
+  var di=result.device_info||{};
+  var model=di.model_name||'';
+  var storage=di.storage||'';
+  var confVal=result.confidence;
+  var confLabel=typeof confVal==='number'?(confVal>=0.8?'높음':confVal>=0.5?'보통':'낮음'):(confVal==='high'?'높음':confVal==='medium'?'보통':'낮음');
+  var priceKey=null;
+  Object.keys(PRICES).forEach(function(k){if(model.indexOf(k)>=0)priceKey=k;});
+  var prices=priceKey?PRICES[priceKey]:null;
+
+  // decision_path
+  var dp=result.decision_path;
+  var dpSection=null;
+  if(dp){
+    dpSection=h('div',{className:'card',style:{padding:'16px 18px'}},
+      h('div',{style:{fontWeight:'700',fontSize:'14px',marginBottom:'9px'}},'🎯 판정 경로 (Decision Path)'),
+      h('div',{className:'dp-box'},
+        h('div',{className:'dp-step'},
+          h('span',{className:'dp-stop'},'● '),
+          h('span',null,dp.stopped_at,' — '),
+          h('strong',null,dp.decisive_reason||'')
+        ),
+        dp.step_results&&dp.step_results.map(function(s,i){
+          return h('div',{key:i,className:'dp-step',style:{color:'#94A3B8'}},
+            h('span',null,'  '+(s.result==='통과'?'✓':'→')+' '+s.step+': '+s.note)
+          );
+        })
+      )
+    );
+  }
+
+  // area_summary
+  var as=result.area_summary;
+  var areaSection=null;
+  if(as){
+    areaSection=h('div',{className:'area-grid'},
+      Object.entries(as).map(function(e){
+        var key=e[0],val=e[1];
+        var statusClass='area-item status-'+(val.status||'clean');
+        return h('div',{key:key,className:'area-item '+statusClass},
+          h('div',{className:'area-item-t'},(AREA_LABELS[key]||key)+' — '+(AREA_STATUS[val.status]||val.status)),
+          h('div',{className:'area-item-s'},val.note||'')
+        );
+      })
+    );
+  }
+
+  // device_info 필드 목록 (IMEI/일련번호 포함)
+  var diFields=[
+    ['모델명',model],
+    ['모델번호',di.model_number],
+    ['저장용량',storage],
+    ['IMEI',di.imei],
+    ['IMEI 2',di.imei2],
+    ['배터리',di.battery_percent?(di.battery_percent+'% ('+di.battery_status+')'):di.battery_status],
+    ['통신사',di.carrier],
+    ['국내/해외',di.is_domestic===true?'국내 ✅':di.is_domestic===false?'해외 ❌':null],
+  ].filter(function(x){return x[1]&&x[1]!=='null'&&x[1]!=='undefined'&&x[1]!=='미수집';});
+
+  return h('div',{className:'pg'},
+    // 등급 카드
+    h('div',{className:'rg-card',style:{background:cfg.bg}},
+      h('div',{style:{fontSize:'44px',marginBottom:'5px'}},cfg.emoji),
+      h('div',{className:'rg-name',style:{color:cfg.color}},grade),
+      h('div',{className:'rg-ko',style:{color:cfg.color}},cfg.ko+' 등급'),
+      h('span',{className:'rg-conf',style:{color:cfg.color}},'신뢰도: '+confLabel)
+    ),
+    // 사진 미니
+    photos.length>0&&h('div',{className:'pt-mini'},
+      photos.map(function(p,i){return h('img',{key:i,src:p.url,alt:'p'+i});})
+    ),
+    // 인증 정보
+    authInfo&&h('div',{className:'al al-ok'},'✅ 인증 완료 · '+authInfo.name+' ('+authInfo.carrier+' · '+authInfo.phone+')'),
+    // 기기 정보 (IMEI 포함)
+    diFields.length>0&&h('div',{className:'card',style:{padding:'16px 18px'}},
+      h('div',{style:{fontWeight:'700',fontSize:'14px',marginBottom:'11px'}},'📱 기기 정보 (OCR)'),
+      diFields.map(function(x){
+        var isImei=x[0].indexOf('IMEI')>=0||x[0].indexOf('일련')>=0;
+        return h('div',{key:x[0],className:'di-row'},
+          h('span',{className:'di-label'},x[0]),
+          isImei?h('span',{className:'di-val'},h('span',{className:'imei-val'},x[1])):h('span',{className:'di-val'},x[1])
+        );
+      })
+    ),
+    // 5등급 매입가
+    h('div',{className:'card',style:{padding:'16px 18px'}},
+      h('div',{style:{fontWeight:'700',fontSize:'14px',marginBottom:'11px'}},
+        '💰 5등급 예상 매입가',
+        priceKey&&h('span',{style:{fontSize:'11px',color:'#64748B',fontWeight:'400',marginLeft:'6px'}},priceKey+' '+storage)
+      ),
+      prices?h('table',{className:'ptable'},h('tbody',null,
+        Object.entries(GC).filter(function(e){return e[0]!=='검수불가';}).map(function(e){
+          var key=e[0],g=e[1],hit=key===grade;
+          return h('tr',{key:key,style:hit?{background:g.bg}:{}},
+            h('td',{style:hit?{padding:'9px 9px',borderRadius:'6px 0 0 6px'}:{}},
+              h('span',{style:{fontWeight:'700',color:g.color}},g.emoji+' '+key),
+              h('span',{style:{fontSize:'11px',color:'#94a3b8',marginLeft:'5px'}},g.ko)
+            ),
+            h('td',{style:hit?{textAlign:'right',padding:'9px 9px',borderRadius:'0 6px 6px 0',color:g.color,fontWeight:'800'}:{textAlign:'right',color:'#374151',fontWeight:'700'}},
+              fmt(prices[key]),
+              hit&&h('span',{style:{fontSize:'10px',marginLeft:'5px',fontWeight:'600'}},'← 현재')
+            )
+          );
+        })
+      )):h('div',{className:'al al-warn'},'ℹ️ '+(model?("'"+model+"' 모델의 매입가 정보가 없습니다."):'모델명을 인식하지 못했습니다.')+' 담당자에게 문의해주세요.')
+    ),
+    // Decision Path
+    dpSection,
+    // 판정 근거
+    result.summary&&h('div',{className:'card',style:{padding:'16px 18px'}},
+      h('div',{style:{fontWeight:'700',fontSize:'14px',marginBottom:'9px'}},'🔍 판정 근거'),
+      h('div',{className:'jbox'},result.summary),
+      // area_summary
+      areaSection&&h('div',null,
+        h('div',{style:{fontWeight:'700',fontSize:'13px',margin:'14px 0 8px'}},'부위별 상태'),
+        areaSection
+      )
+    ),
+    // 부위별 상세 분석
+    result.analysis&&h('div',{className:'card',style:{padding:'16px 18px'}},
+      h('div',{style:{fontWeight:'700',fontSize:'14px',marginBottom:'9px'}},'📋 부위별 상세'),
+      ['display','back','bezel','camera','lcd'].map(function(k){
+        var v=result.analysis[k];
+        if(!v) return null;
+        var labels={display:'전면(액정)',back:'후면',bezel:'베젤/측면',camera:'카메라',lcd:'LCD 상태'};
+        return h('div',{key:k,style:{fontSize:'12px',color:'#475569',padding:'6px 0',borderBottom:'1px solid #F1F5F9'}},
+          h('span',{style:{fontWeight:'700',color:'#334155'}},(labels[k]||k)+': '),
+          typeof v==='object'?(v.grade?' ['+v.grade+'] ':'')+v.detail:v
+        );
+      })
+    ),
+    h('button',{className:'btn-p',onClick:props.onRestart,style:{marginBottom:'20px'}},'🔄 새 단말기 접수하기')
+  );
+}
+
+// ── 메인 앱 ──
+function App() {
+  var s0=useState(0);var step=s0[0],setStep=s0[1];
+  var s1=useState(false);var auth1Done=s1[0],setAuth1Done=s1[1];
+  var s2=useState(null);var auth1Info=s2[0],setAuth1Info=s2[1];
+  var s3=useState(null);var authFinal=s3[0],setAuthFinal=s3[1];
+  var s4=useState(null);var method=s4[0],setMethod=s4[1];
+  var s5=useState(null);var result=s5[0],setResult=s5[1];
+  var s6=useState([]);var photos=s6[0],setPhotos=s6[1];
+
+  function restart(){setStep(0);setAuth1Done(false);setAuth1Info(null);setAuthFinal(null);setMethod(null);setResult(null);setPhotos([]);}
+
+  return h('div',null,
+    h(Header),
+    step>0&&h(StepBar,{cur:step}),
+    step===0&&h(Landing,{onNext:function(){setStep(1);}}),
+    step===1&&h(Auth1,{
+      onDone:function(info){setAuth1Done(true);setAuth1Info(info);setStep(2);},
+      onSkip:function(){setAuth1Done(false);setAuth1Info(null);setStep(2);}
+    }),
+    step===2&&h(Method,{onSelect:function(m){setMethod(m);setStep(3);}}),
+    step===3&&h(Upload,{method:method,onResult:function(r,p){setResult(r);setPhotos(p);setStep(4);}}),
+    step===4&&h(Auth2,{
+      auth1Done:auth1Done,
+      auth1Info:auth1Info,
+      onDone:function(info){setAuthFinal(info||auth1Info);setStep(5);}
+    }),
+    step===5&&h(Result,{result:result,photos:photos,authInfo:authFinal,onRestart:restart})
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+
+</script>
+</body>
+</html>

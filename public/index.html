@@ -13,6 +13,11 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(
 .hd-mark{width:32px;height:32px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:18px}
 .hd-name{font-weight:800;font-size:18px;color:var(--navy)}
 .hd-name span{color:var(--green)}
+.hd-nav{margin-left:auto;display:flex;gap:8px}
+.hd-btn{background:#F1F5F9;color:var(--texts);border:1px solid var(--border);border-radius:8px;padding:6px 11px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px}
+.hd-btn:hover{background:var(--green-l);color:var(--green-d);border-color:var(--green)}
+.hd-btn.badge{position:relative}
+.hd-btn .bcnt{background:#DC2626;color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:800;margin-left:2px}
 .stepbar{background:#fff;border-bottom:1px solid var(--border);padding:11px 14px;display:flex;align-items:center;overflow-x:auto;gap:0;scrollbar-width:none}
 .stepbar::-webkit-scrollbar{display:none}
 .si{display:flex;align-items:center;gap:5px;flex-shrink:0}
@@ -34,6 +39,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(
 .hero p{font-size:12px;color:rgba(255,255,255,.7);line-height:1.6;position:relative;z-index:1;margin-bottom:22px}
 .btn-cta{background:var(--green);color:#fff;border:none;border-radius:12px;padding:14px 0;font-size:15px;font-weight:800;cursor:pointer;width:100%;box-shadow:0 4px 14px rgba(0,196,115,.4);transition:all .2s;position:relative;z-index:1}
 .btn-cta:hover{background:var(--green-d)}
+.btn-link{display:block;background:#fff;color:var(--navy);border:1.5px solid var(--border);border-radius:10px;padding:12px;font-size:13px;font-weight:700;text-align:center;text-decoration:none;margin-bottom:9px;cursor:pointer;transition:all .2s;width:100%;font-family:inherit}
+.btn-link:hover{border-color:var(--green);background:var(--green-l);color:var(--green-d)}
 .ig{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:13px}
 .ic{background:#fff;border-radius:var(--rs);padding:14px 12px;border:1px solid var(--border)}
 .ic-ico{font-size:20px;margin-bottom:5px}
@@ -42,24 +49,35 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(
 .gr-row{background:#fff;border-radius:var(--rs);padding:13px;border:1px solid var(--border);margin-bottom:13px}
 .gr-row h3{font-size:12px;font-weight:700;color:var(--texts);margin-bottom:9px}
 .gr-badges{display:flex;gap:5px;flex-wrap:wrap}
-.gr-badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.gr-badge{padding:6px 12px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;transition:transform .15s;border:none;font-family:inherit}
+.gr-badge:hover{transform:scale(1.05)}
+.gr-hint{font-size:10px;color:var(--textm);margin-top:8px;text-align:center}
 .frow{margin-bottom:13px}
 .flabel{font-size:13px;font-weight:600;color:var(--texts);margin-bottom:5px;display:block}
 .finput{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;font-size:14px;outline:none;transition:border-color .2s;background:#fff;font-family:inherit}
 .finput:focus{border-color:var(--green)}
 .fselect{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;font-size:14px;outline:none;background:#fff;cursor:pointer;font-family:inherit}
 .fselect:focus{border-color:var(--green)}
+.ftext{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;font-size:14px;outline:none;transition:border-color .2s;background:#fff;font-family:inherit;resize:vertical;min-height:70px}
+.ftext:focus{border-color:var(--green)}
 .btn-p{background:var(--green);color:#fff;border:none;border-radius:12px;padding:13px 0;font-size:14px;font-weight:700;cursor:pointer;width:100%;transition:all .2s;font-family:inherit}
 .btn-p:hover{background:var(--green-d)}
 .btn-p:disabled{background:var(--textm);cursor:not-allowed}
 .btn-sk{background:#fff;color:var(--texts);border:1.5px solid var(--border);border-radius:12px;padding:11px 0;font-size:13px;font-weight:600;cursor:pointer;width:100%;transition:all .2s;font-family:inherit}
 .btn-sk:hover{border-color:var(--green);color:var(--green-d)}
+.btn-warn{background:#F59E0B;color:#fff;border:none;border-radius:12px;padding:13px 0;font-size:14px;font-weight:700;cursor:pointer;width:100%;transition:all .2s;font-family:inherit}
+.btn-warn:hover{background:#D97706}
+.btn-blue{background:#2563EB;color:#fff;border:none;border-radius:12px;padding:13px 0;font-size:14px;font-weight:700;cursor:pointer;width:100%;transition:all .2s;font-family:inherit}
+.btn-blue:hover{background:#1D4ED8}
 .mc{border:2px solid var(--border);border-radius:var(--rs);padding:16px 14px;cursor:pointer;transition:all .2s;margin-bottom:9px;display:flex;align-items:center;gap:13px}
 .mc:hover,.mc.sel{border-color:var(--green);background:var(--green-l)}
 .mc-ico{font-size:28px;flex-shrink:0}
 .mc-info h4{font-size:13px;font-weight:700;margin-bottom:3px}
 .mc-info p{font-size:11px;color:var(--texts);line-height:1.4}
 .mc-badge{margin-left:auto;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;flex-shrink:0}
+.notice{background:#FEF3C7;border:1.5px solid #F59E0B;border-radius:var(--rs);padding:13px 14px;margin-bottom:13px;font-size:12px;color:#92400E;line-height:1.6}
+.notice strong{color:#78350F;font-weight:800}
+.notice-icon{font-size:16px;margin-right:5px}
 .uz{border:2px dashed var(--border);border-radius:var(--rs);padding:20px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:9px}
 .uz:hover{border-color:var(--green);background:var(--green-l)}
 .uz-ico{font-size:28px;margin-bottom:5px}
@@ -71,10 +89,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(
 .pt-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
 .pt-add{border:2px dashed #ccc;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;color:#aaa;background:#f9f9f9;aspect-ratio:1;border-radius:8px}
 .hint{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:9px 11px;font-size:11px;color:#1E40AF;margin-bottom:11px;line-height:1.5}
-.api-row{display:flex;gap:6px;margin-bottom:11px}
-.api-in{flex:1;border:1.5px solid var(--border);border-radius:10px;padding:10px 11px;font-size:12px;font-family:monospace;outline:none}
-.api-in:focus{border-color:var(--green)}
-.api-btn{background:var(--green-l);color:var(--green-d);border:1px solid var(--green);border-radius:10px;padding:10px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit}
+.subhead{font-size:13px;font-weight:800;color:var(--navy);margin:16px 0 8px;padding-left:6px;border-left:3px solid var(--green)}
 .al{border-radius:9px;padding:9px 12px;font-size:12px;margin-bottom:11px;display:flex;align-items:flex-start;gap:7px;line-height:1.5}
 .al-info{background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE}
 .al-warn{background:#FFFBEB;color:#92400E;border:1px solid #FCD34D}
@@ -115,6 +130,40 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(
 .bb{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);padding:10px 16px;display:flex;gap:8px;z-index:99;box-shadow:0 -4px 20px rgba(0,0,0,.08)}
 .bb .btn-p{flex:2}
 .bb .btn-sk{flex:1}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:300;padding:16px}
+.modal{background:#fff;border-radius:var(--r);max-width:440px;width:100%;max-height:88vh;overflow-y:auto;padding:0;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-h{padding:18px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;border-radius:var(--r) var(--r) 0 0}
+.modal-h h3{font-size:16px;font-weight:800}
+.modal-x{background:#F1F5F9;border:none;width:28px;height:28px;border-radius:50%;font-size:16px;cursor:pointer;color:var(--texts);display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
+.modal-b{padding:16px 20px 20px}
+.modal-grade{display:inline-block;padding:6px 14px;border-radius:20px;font-size:14px;font-weight:800;margin-bottom:12px}
+.modal-desc{font-size:13px;color:var(--text);line-height:1.7;margin-bottom:14px}
+.modal-crit{background:var(--gray);border-radius:var(--rs);padding:12px 14px;margin-bottom:10px}
+.modal-crit-t{font-size:12px;font-weight:800;color:var(--navy);margin-bottom:6px}
+.modal-crit-l{font-size:12px;color:var(--texts);line-height:1.7;padding-left:14px}
+.modal-crit-l li{margin-bottom:3px}
+.saved-card{background:#fff;border:1px solid var(--border);border-radius:var(--rs);padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.04);cursor:pointer;transition:all .2s}
+.saved-card:hover{border-color:var(--green);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.saved-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.saved-num{font-family:monospace;font-size:12px;font-weight:800;color:var(--navy);background:var(--gray);padding:3px 8px;border-radius:6px}
+.saved-status{font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px}
+.status-pending{background:#FEF3C7;color:#92400E}
+.status-completed{background:var(--green-l);color:var(--green-d)}
+.saved-info{display:flex;justify-content:space-between;font-size:11px;color:var(--texts);margin-bottom:6px}
+.saved-thumbs{display:flex;gap:4px;overflow-x:auto;padding:6px 0 2px}
+.saved-thumbs img{width:44px;height:44px;object-fit:cover;border-radius:5px;border:1px solid var(--border);flex-shrink:0}
+.saved-empty{text-align:center;padding:40px 20px;color:var(--textm)}
+.saved-empty-i{font-size:36px;margin-bottom:9px}
+.saved-empty-t{font-size:13px;font-weight:700;color:var(--texts);margin-bottom:4px}
+.saved-empty-s{font-size:11px;color:var(--textm)}
+.rvw-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.rvw-btn{border:1.5px solid var(--border);background:#fff;border-radius:10px;padding:10px 0;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit;color:var(--text)}
+.rvw-btn:hover{border-color:var(--green);background:var(--green-l);color:var(--green-d)}
+.rvw-btn.approve{background:var(--green-l);color:var(--green-d);border-color:var(--green)}
+.rvw-btn.approve:hover{background:var(--green);color:#fff}
+.rvw-btn.change{background:#FEF3C7;color:#92400E;border-color:#F59E0B}
+.rvw-btn.change:hover{background:#F59E0B;color:#fff}
+.rvw-status{background:var(--green-l);border:1px solid var(--green);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--green-d);font-weight:700;margin-bottom:8px;text-align:center}
 
 </style>
 </head>
@@ -123,6 +172,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script>
+
 // ── 등급 설정 ──
 var GC = {
   Excellent:  {ko:'최상',  color:'#7C3AED', bg:'#F5F3FF', emoji:'✨'},
@@ -131,6 +181,30 @@ var GC = {
   Normal:     {ko:'보통',  color:'#D97706', bg:'#FFFBEB', emoji:'🟡'},
   Bad:        {ko:'미흡',  color:'#DC2626', bg:'#FEF2F2', emoji:'🔴'},
   '검수불가': {ko:'검수불가',color:'#64748B',bg:'#F1F5F9', emoji:'⛔'},
+};
+
+// ── 등급별 사용자용 설명 ──
+var GRADE_DESC = {
+  Excellent: {
+    desc: '거의 새 제품에 가까운 최상급 상태의 단말기입니다. 외관 손상이 전혀 없거나 확대해야 겨우 보일 정도이며, 화면·후면·베젤 모두 흠집 없는 컨디션이에요.',
+    criteria: ['외관 손상 없음 (사용감 최소)', '화면 스크래치·긁힘 없음', '베젤/측면 찍힘 없음', '카메라 렌즈 손상 없음', '배터리 성능 정상 (아이폰 85% 이상)']
+  },
+  'Very Good': {
+    desc: '일상적으로 조심스럽게 사용한 티가 나는 우수한 상태입니다. 미세한 생활기스 정도는 있을 수 있지만 눈에 잘 띄지 않으며, 전체적으로 깨끗한 컨디션이에요.',
+    criteria: ['미세한 생활기스 정도만 있음', '눈에 잘 띄지 않는 소소한 흠집', '기능 이상 없음', '베젤 얕은 스크래치 허용', '배터리 성능 양호 (아이폰 80% 이상)']
+  },
+  Good: {
+    desc: '일반적인 사용감이 있는 양호한 상태입니다. 확실히 보이는 스크래치나 소소한 찍힘 등 사용 흔적이 있지만, 사용에는 전혀 지장이 없는 컨디션이에요.',
+    criteria: ['눈에 보이는 스크래치 존재', '베젤/측면 소소한 찍힘 있음', '기능 이상 없음', '화면 미세 흠집 있을 수 있음', '카메라 렌즈에 얕은 흠집 허용']
+  },
+  Normal: {
+    desc: '사용 흔적이 뚜렷하게 보이는 보통 상태입니다. 여러 부위에 손상이 있거나 눈에 띄는 스크래치·찍힘 등이 있는 컨디션이에요.',
+    criteria: ['여러 부위에 손상 존재', '뚜렷한 스크래치나 찍힘', '화면 가장자리 살짝 황변 가능', '후면 넓은 흠집 가능', '배터리 성능 저하 (아이폰 80% 미만)']
+  },
+  Bad: {
+    desc: '심한 손상이 있는 미흡한 상태입니다. 액정 파손, 심한 찍힘, 화면 흑점, 화면 심한 황변 등 사용감이 매우 큰 컨디션이에요.',
+    criteria: ['액정 파손 또는 심한 흑점', '후면 유리 깨짐', '심한 찍힘/충격 흔적', '화면 전체 황변', '카메라 렌즈 파손']
+  }
 };
 
 // ── 매입가 ──
@@ -150,20 +224,99 @@ var PRICES = {
 
 function fmt(n){ return n ? n.toLocaleString()+'원' : '문의'; }
 
+// 이미지 리사이즈 (Vercel 4.5MB 제한 회피 + 판정 속도 향상)
+// 긴 변 1600px, JPEG 82% - 화질과 크기 균형
+function resizeImage(file, maxSize, quality){
+  maxSize = maxSize || 1600;
+  quality = quality || 0.82;
+  return new Promise(function(resolve, reject){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var img = new Image();
+      img.onload = function(){
+        var w = img.width, hh = img.height;
+        if(w > maxSize || hh > maxSize){
+          if(w > hh){ hh = Math.round(hh * (maxSize/w)); w = maxSize; }
+          else { w = Math.round(w * (maxSize/hh)); hh = maxSize; }
+        }
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = hh;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, hh);
+        var dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve({
+          url: dataUrl,
+          b64: dataUrl.split(',')[1],
+          mediaType: 'image/jpeg'
+        });
+      };
+      img.onerror = function(){reject(new Error('이미지 로드 실패'));};
+      img.src = e.target.result;
+    };
+    reader.onerror = function(){reject(new Error('파일 읽기 실패'));};
+    reader.readAsDataURL(file);
+  });
+}
+
 var CARRIERS = ['SKT','KT','LGU+','SKT 알뜰폰','KT 알뜰폰','LGU+ 알뜰폰','기타'];
-var STEPS = ['소개','1차 인증','촬영방식','사진업로드','2차 인증','판정결과'];
+// v19: 1차 인증 제외 → 소개→촬영방식→사진업로드→본인인증→판정결과
+var STEPS = ['소개','촬영방식','사진업로드','본인인증','판정결과'];
 var AREA_LABELS = {front:'전면(액정)',back:'후면',bezel_side:'베젤/측면',camera:'카메라'};
 var AREA_STATUS = {clean:'양호',minor:'미세손상',notable:'손상있음'};
+
+// 접수번호 자동 생성 (SMRI-YYMMDD-XXXX)
+function genReceiptNumber(){
+  var d = new Date();
+  var yy = String(d.getFullYear()).slice(2);
+  var mm = String(d.getMonth()+1).padStart(2,'0');
+  var dd = String(d.getDate()).padStart(2,'0');
+  var rand = Math.floor(1000 + Math.random()*9000);
+  return 'SMRI-'+yy+mm+dd+'-'+rand;
+}
+
+// 저장된 접수건 로드/저장 (localStorage)
+var PENDING_KEY = 'ribbon_pending_receipts';
+function loadPending(){
+  try { return JSON.parse(localStorage.getItem(PENDING_KEY)||'[]'); }
+  catch(e){ return []; }
+}
+function savePending(list){
+  try { localStorage.setItem(PENDING_KEY, JSON.stringify(list)); }
+  catch(e){ console.error(e); }
+}
+function addPending(item){
+  var list = loadPending();
+  list.unshift(item);
+  savePending(list);
+}
+function removePending(receiptNumber){
+  var list = loadPending().filter(function(x){return x.receiptNumber!==receiptNumber;});
+  savePending(list);
+}
+function getPendingCount(){ return loadPending().filter(function(x){return x.status==='pending';}).length; }
 
 var h = React.createElement;
 var useState = React.useState;
 var useRef = React.useRef;
+var useEffect = React.useEffect;
 
 // ── 헤더 ──
-function Header() {
+function Header(props) {
+  var s = useState(getPendingCount());
+  var pendingCount = s[0], setPendingCount = s[1];
+  useEffect(function(){
+    var t = setInterval(function(){setPendingCount(getPendingCount());}, 1000);
+    return function(){clearInterval(t);};
+  }, []);
   return h('header', {className:'hd'},
-    h('div', {className:'hd-mark'}, 'R'),
-    h('div', {className:'hd-name'}, h('span',null,'리본'), ' AI 판정기')
+    h('div', {className:'hd-mark',onClick:props.onGoHome,style:{cursor:'pointer'}}, 'R'),
+    h('div', {className:'hd-name',onClick:props.onGoHome,style:{cursor:'pointer'}}, h('span',null,'리본'), ' AI 판정기'),
+    h('div', {className:'hd-nav'},
+      h('button', {className:'hd-btn',onClick:props.onGoPending},
+        '📋 미완료 접수',
+        pendingCount>0 && h('span',{className:'bcnt'},pendingCount)
+      )
+    )
   );
 }
 
@@ -174,7 +327,7 @@ function StepBar(props) {
   for(var i=0;i<STEPS.length;i++){
     items.push(
       h('div',{className:'si',key:i},
-        h('div',{className:'sd'+(i<cur?' done':i===cur?' act':'')}, i<cur?'✓':String(i+1)),
+        h('div',{className:'sd'+(i<cur?' done':i===cur?' act':'')}, i<cur?'✓':i+1),
         h('span',{className:'sl'+(i===cur?' act':'')}, STEPS[i])
       )
     );
@@ -183,14 +336,50 @@ function StepBar(props) {
   return h('div',{className:'stepbar'}, items);
 }
 
+// ── 등급 설명 모달 ──
+function GradeModal(props) {
+  if(!props.grade) return null;
+  var g = props.grade;
+  var cfg = GC[g];
+  var info = GRADE_DESC[g];
+  if(!info) return null;
+  return h('div',{className:'modal-bg',onClick:props.onClose},
+    h('div',{className:'modal',onClick:function(e){e.stopPropagation();}},
+      h('div',{className:'modal-h'},
+        h('h3',null,'등급 안내'),
+        h('button',{className:'modal-x',onClick:props.onClose},'✕')
+      ),
+      h('div',{className:'modal-b'},
+        h('div',{className:'modal-grade',style:{background:cfg.bg,color:cfg.color}},
+          cfg.emoji+' '+g+' ('+cfg.ko+')'
+        ),
+        h('div',{className:'modal-desc'}, info.desc),
+        h('div',{className:'modal-crit'},
+          h('div',{className:'modal-crit-t'},'📋 판정 기준'),
+          h('ul',{className:'modal-crit-l'},
+            info.criteria.map(function(c,i){return h('li',{key:i},c);})
+          )
+        )
+      )
+    )
+  );
+}
+
 // ── 1. 랜딩 ──
 function Landing(props) {
+  var s = useState(null);
+  var openGrade = s[0], setOpenGrade = s[1];
   return h('div',{className:'pg'},
+    h(GradeModal,{grade:openGrade,onClose:function(){setOpenGrade(null);}}),
     h('div',{className:'hero'},
       h('div',{className:'hero-badge'}, 'KT M&S · 리본 사업팀'),
       h('h1',null,'중고폰을', h('br'), h('em',null,'AI가 정확하게'), ' 판정합니다'),
       h('p',null,'사진 몇 장으로 등급과 예상 매입가를',h('br'),'바로 확인해보세요. 최소 30초.'),
       h('button',{className:'btn-cta',onClick:props.onNext}, '📱  지금 바로 접수하기')
+    ),
+    // 시세조회 링크 (변경 1번)
+    h('a',{className:'btn-link',href:'https://smri.co.kr/current/price',target:'_blank',rel:'noopener noreferrer'},
+      '🔍 판매가능 중고폰 확인 및 시세조회하기'
     ),
     h('div',{className:'ig'},
       [['🤖','AI 자동 판정','33,000건 실거래 데이터 학습'],
@@ -201,60 +390,33 @@ function Landing(props) {
         h('div',{className:'ic-ico'},c[0]),h('h3',null,c[1]),h('p',null,c[2])
       );})
     ),
+    // 5등급 안내 (변경 2번 - 클릭 시 팝업)
     h('div',{className:'gr-row'},
-      h('h3',null,'📊 리본 5단계 등급'),
+      h('h3',null,'📊 리본 5단계 등급 (클릭하면 등급별 설명이 나와요)'),
       h('div',{className:'gr-badges'},
         Object.entries(GC).filter(function(e){return e[0]!=='검수불가';}).map(function(e){
-          return h('span',{className:'gr-badge',key:e[0],style:{background:e[1].bg,color:e[1].color}},
+          return h('button',{className:'gr-badge',key:e[0],style:{background:e[1].bg,color:e[1].color},
+            onClick:function(){setOpenGrade(e[0]);}},
             e[1].emoji+' '+e[0]
           );
         })
-      )
-    )
-  );
-}
-
-// ── 2. 1차 본인인증 ──
-function Auth1(props) {
-  var s1=useState('');var name=s1[0],setName=s1[1];
-  var s2=useState('');var carrier=s2[0],setCarrier=s2[1];
-  var s3=useState('');var phone=s3[0],setPhone=s3[1];
-  var s4=useState('');var err=s4[0],setErr=s4[1];
-  var valid = name.trim() && carrier && phone.replace(/\D/g,'').length>=10;
-  function submit(){
-    if(!valid){setErr('이름, 통신사, 연락처를 모두 입력해주세요.');return;}
-    props.onDone({name:name.trim(),carrier:carrier,phone:phone.trim()});
-  }
-  return h('div',{className:'pg',style:{paddingBottom:'90px'}},
-    h('div',{className:'card'},
-      h('div',{className:'card-t'},'본인 인증 ',h('span',{style:{fontSize:'13px',color:'#94A3B8',fontWeight:'500'}},'(1차)')),
-      h('div',{className:'card-s'},
-        '이름, 통신사, 연락처를 입력하여 본인 확인을 진행합니다.',h('br'),
-        h('strong',{style:{color:'#D97706'}},'지금 건너뛰셔도 괜찮습니다.'),
-        ' 사진 업로드 후 결과 확인 전 단계에서 다시 인증하실 수 있습니다.'
       ),
-      h('div',{className:'frow'},h('label',{className:'flabel'},'이름'),
-        h('input',{className:'finput',placeholder:'홍길동',value:name,onChange:function(e){setName(e.target.value);}})),
-      h('div',{className:'frow'},h('label',{className:'flabel'},'통신사'),
-        h('select',{className:'fselect',value:carrier,onChange:function(e){setCarrier(e.target.value);}},
-          h('option',{value:''},'통신사 선택'),
-          CARRIERS.map(function(c){return h('option',{key:c,value:c},c);})
-        )),
-      h('div',{className:'frow'},h('label',{className:'flabel'},'연락처'),
-        h('input',{className:'finput',placeholder:'010-0000-0000',value:phone,inputMode:'tel',onChange:function(e){setPhone(e.target.value);}})),
-      err && h('div',{className:'al al-err'},'⚠️ '+err)
-    ),
-    h('div',{className:'bb'},
-      h('button',{className:'btn-sk',onClick:props.onSkip},'건너뛰기 →'),
-      h('button',{className:'btn-p',onClick:submit,disabled:!valid},'인증 완료')
+      h('div',{className:'gr-hint'},'👆 각 등급을 눌러보세요')
     )
   );
 }
 
-// ── 3. 촬영방식 ──
+// ── 2. 촬영방식 (변경 3번: 사전 연락 안내 추가) ──
 function Method(props) {
   var s=useState(null);var sel=s[0],setSel=s[1];
   return h('div',{className:'pg',style:{paddingBottom:'90px'}},
+    // 본인인증 사전 연락 안내 (변경 3번)
+    h('div',{className:'notice'},
+      h('span',{className:'notice-icon'},'⚠️'),
+      h('strong',null,'본인인증 안내'),h('br'),
+      '사진 업로드 후 ',h('strong',null,'단말기 소유자 본인의 통신사·연락처로 본인인증'),'이 필요합니다.',h('br'),
+      '접수 진행 전 반드시 ',h('strong',null,'단말기 소유자와 사전 연락'),'해 주세요. 인증이 지연될 경우 임시저장 후 나중에 진행할 수 있습니다.'
+    ),
     h('div',{className:'card'},
       h('div',{className:'card-t'},'촬영 방식 선택'),
       h('div',{className:'card-s'},'단말기를 어떤 방식으로 촬영하셨나요?'),
@@ -274,61 +436,74 @@ function Method(props) {
   );
 }
 
-// ── 4. 사진업로드 ──
+// ── 3. 사진 업로드 (변경 4번: MRI 16장/직접 12장, 기본+추가 분리) ──
 function Upload(props) {
-  var s1=useState([]);var photos=s1[0],setPhotos=s1[1];
+  var s1=useState([]);var basePhotos=s1[0],setBasePhotos=s1[1];
+  var s2=useState([]);var extraPhotos=s2[0],setExtraPhotos=s2[1];
   var s4=useState(false);var analyzing=s4[0],setAnalyzing=s4[1];
   var s5=useState('');var err=s5[0],setErr=s5[1];
-  var fileRef=useRef(null);
+  var baseRef=useRef(null);
+  var extraRef=useRef(null);
 
-  function addFiles(files){
+  var maxBase = props.method==='mri' ? 16 : 12;
+  var maxExtra = 6;
+
+  function addFiles(files, isExtra){
     var arr=Array.from(files).filter(function(f){return f.type.indexOf('image/')===0;});
-    if(photos.length+arr.length>10){setErr('최대 10장까지 업로드 가능합니다.');return;}
+    var current = isExtra ? extraPhotos : basePhotos;
+    var max = isExtra ? maxExtra : maxBase;
+    var setter = isExtra ? setExtraPhotos : setBasePhotos;
+    if(current.length+arr.length>max){setErr((isExtra?'추가 첨부':'단말기 기본 사진')+' 최대 '+max+'장까지 업로드 가능합니다.');return;}
     setErr('');
+    // 자동 리사이즈: 큰 사진도 판정 가능
     arr.forEach(function(file){
-      var r=new FileReader();
-      r.onload=function(e){setPhotos(function(prev){return prev.concat([{file:file,url:e.target.result,b64:e.target.result.split(',')[1]}]);});};
-      r.readAsDataURL(file);
+      resizeImage(file, 1600, 0.82).then(function(res){
+        setter(function(prev){return prev.concat([{
+          file: {type: res.mediaType, name: file.name},
+          url: res.url,
+          b64: res.b64
+        }]);});
+      }).catch(function(e){setErr('이미지 처리 오류: '+e.message);});
     });
   }
 
   function go(){
-    if(!photos.length){setErr('사진을 1장 이상 업로드해주세요.');return;}
+    var allPhotos = basePhotos.concat(extraPhotos);
+    if(!allPhotos.length){setErr('단말기 기본 사진을 1장 이상 업로드해주세요.');return;}
     setErr('');setAnalyzing(true);
-
     fetch('/api/grade',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({images:photos.map(function(p){return {media_type:p.file.type,data:p.b64};}),method:props.method}),
+      body:JSON.stringify({images:allPhotos.map(function(p){return {media_type:p.file.type,data:p.b64};}),method:props.method}),
     })
     .then(function(res){return res.json().then(function(d){return {ok:res.ok,data:d};});})
     .then(function(r){
       if(!r.ok) throw new Error(r.data.error||'판정 오류');
-      props.onResult(r.data,photos);
+      props.onResult(r.data,allPhotos);
     })
     .catch(function(e){setErr('판정 오류: '+e.message);})
     .finally(function(){setAnalyzing(false);});
   }
 
-  var photoArea;
-  if(photos.length>0){
-    var cells=photos.map(function(p,i){
-      return h('div',{key:i,className:'pt'},
-        h('img',{src:p.url,alt:'p'}),
-        h('button',{className:'pt-del',onClick:function(){setPhotos(function(prev){return prev.filter(function(_,j){return j!==i;});});}}, '✕')
-      );
-    });
-    if(photos.length<10) cells.push(h('div',{key:'add',className:'pt-add',onClick:function(){fileRef.current&&fileRef.current.click();}},'+'));
-    photoArea=h('div',{className:'pgrid'},cells);
-  } else {
-    photoArea=h('div',{className:'uz',
-      onClick:function(){fileRef.current&&fileRef.current.click();},
-      onDrop:function(e){e.preventDefault();addFiles(e.dataTransfer.files);},
+  function renderGrid(photos, setter, ref, max, isExtra){
+    if(photos.length>0){
+      var cells=photos.map(function(p,i){
+        return h('div',{key:i,className:'pt'},
+          h('img',{src:p.url,alt:'p'}),
+          h('button',{className:'pt-del',onClick:function(){setter(function(prev){return prev.filter(function(_,j){return j!==i;});});}}, '✕')
+        );
+      });
+      if(photos.length<max) cells.push(h('div',{key:'add',className:'pt-add',onClick:function(){ref.current&&ref.current.click();}},'+'));
+      return h('div',{className:'pgrid'},cells);
+    }
+    return h('div',{className:'uz',
+      onClick:function(){ref.current&&ref.current.click();},
+      onDrop:function(e){e.preventDefault();addFiles(e.dataTransfer.files,isExtra);},
       onDragOver:function(e){e.preventDefault();}
     },
-      h('div',{className:'uz-ico'},'📷'),
-      h('h4',null,'사진을 끌어다 놓거나 클릭하여 선택'),
-      h('p',null,'JPG, PNG 지원 · 최대 10장')
+      h('div',{className:'uz-ico'},isExtra?'📎':'📷'),
+      h('h4',null,isExtra?'추가로 첨부할 사진이 있으신가요?':'사진을 끌어다 놓거나 클릭하여 선택'),
+      h('p',null,'JPG, PNG 지원 · 최대 '+max+'장')
     );
   }
 
@@ -340,49 +515,84 @@ function Upload(props) {
     ),
     h('div',{className:'card'},
       h('div',{className:'card-t'},'사진 업로드'),
-      h('div',{className:'card-s'},(props.method==='mri'?'🔬 MRI기기 촬영':'📱 직접 촬영')+' · 최대 10장'),
+      h('div',{className:'card-s'},(props.method==='mri'?'🔬 MRI기기 촬영':'📱 직접 촬영')),
       h('div',{className:'hint'},'💡 전면(화면), 후면, 측면(4방향), 카메라, 기기정보(설정→일반→정보) 화면을 포함하면 IMEI·배터리까지 자동 추출됩니다.'),
-      photoArea,
-      h('input',{type:'file',ref:fileRef,accept:'image/*',multiple:true,style:{display:'none'},onChange:function(e){addFiles(e.target.files);}})
-    ),
 
+      h('div',{className:'subhead'},'단말기 기본 사진 ('+basePhotos.length+'/'+maxBase+')'),
+      renderGrid(basePhotos,setBasePhotos,baseRef,maxBase,false),
+      h('input',{type:'file',ref:baseRef,accept:'image/*',multiple:true,style:{display:'none'},onChange:function(e){addFiles(e.target.files,false);}}),
+
+      h('div',{className:'subhead'},'추가 첨부 (선택 · '+extraPhotos.length+'/'+maxExtra+')'),
+      h('div',{style:{fontSize:'11px',color:'#64748B',marginBottom:'8px',paddingLeft:'6px'}},'구성품, 영수증, 손상 근접사진 등 참고 자료를 추가할 수 있어요.'),
+      renderGrid(extraPhotos,setExtraPhotos,extraRef,maxExtra,true),
+      h('input',{type:'file',ref:extraRef,accept:'image/*',multiple:true,style:{display:'none'},onChange:function(e){addFiles(e.target.files,true);}})
+    ),
     err&&h('div',{className:'al al-err'},'⚠️ '+err),
     h('div',{className:'bb'},
-      h('button',{className:'btn-p',disabled:!photos.length||analyzing,onClick:go},'🤖 AI 판정 시작')
+      h('button',{className:'btn-p',disabled:!basePhotos.length||analyzing,onClick:go},'🤖 AI 판정 시작')
     )
   );
 }
 
-// ── 5. 2차 본인인증 ──
-function Auth2(props) {
-  var s1=useState(props.auth1Info?props.auth1Info.name:'');var name=s1[0],setName=s1[1];
-  var s2=useState(props.auth1Info?props.auth1Info.carrier:'');var carrier=s2[0],setCarrier=s2[1];
-  var s3=useState(props.auth1Info?props.auth1Info.phone:'');var phone=s3[0],setPhone=s3[1];
+// ── 4. 본인인증 (변경 3번: 임시저장 기능 추가) ──
+function Auth(props) {
+  var s1=useState(props.savedInfo?props.savedInfo.name:'');var name=s1[0],setName=s1[1];
+  var s2=useState(props.savedInfo?props.savedInfo.carrier:'');var carrier=s2[0],setCarrier=s2[1];
+  var s3=useState(props.savedInfo?props.savedInfo.phone:'');var phone=s3[0],setPhone=s3[1];
   var s4=useState('');var err=s4[0],setErr=s4[1];
-
-  if(props.auth1Done){
-    return h('div',{className:'pg',style:{paddingBottom:'90px'}},
-      h('div',{className:'card'},
-        h('div',{className:'card-t'},'본인 인증 ',h('span',{style:{fontSize:'13px',color:'#94A3B8',fontWeight:'500'}},'(2차)')),
-        h('div',{className:'card-s'},'1차 인증이 완료되어 있습니다. 바로 결과를 확인하세요.'),
-        h('div',{className:'vbadge'},'✅ '+props.auth1Info.name+' ('+props.auth1Info.carrier+' · '+props.auth1Info.phone+') — 인증 완료')
-      ),
-      h('div',{className:'bb'},
-        h('button',{className:'btn-p',onClick:function(){props.onDone(props.auth1Info);}},'판정 결과 보기 →')
-      )
-    );
-  }
+  var s5=useState(false);var showSaveConfirm=s5[0],setShowSaveConfirm=s5[1];
 
   var valid=name.trim()&&carrier&&phone.replace(/\D/g,'').length>=10;
+
   function submit(){
     if(!valid){setErr('이름, 통신사, 연락처를 모두 입력해주세요.');return;}
     props.onDone({name:name.trim(),carrier:carrier,phone:phone.trim()});
   }
 
+  function saveForLater(){
+    // 사진, 촬영방식, 접수번호, 판정결과 저장
+    var receiptNumber = props.receiptNumber || genReceiptNumber();
+    var item = {
+      receiptNumber: receiptNumber,
+      photos: props.photos.map(function(p){return {url:p.url,b64:p.b64,mediaType:p.file.type};}),
+      method: props.method,
+      result: props.result,
+      status: 'pending',
+      savedAt: new Date().toISOString(),
+      authInfo: valid ? {name:name.trim(),carrier:carrier,phone:phone.trim()} : null
+    };
+    // 기존에 같은 번호가 있으면 덮어쓰기
+    var list = loadPending().filter(function(x){return x.receiptNumber!==receiptNumber;});
+    list.unshift(item);
+    savePending(list);
+    setShowSaveConfirm(true);
+  }
+
+  if(showSaveConfirm){
+    var receiptNumber = props.receiptNumber || (loadPending()[0] && loadPending()[0].receiptNumber);
+    return h('div',{className:'pg',style:{paddingBottom:'90px'}},
+      h('div',{className:'card',style:{textAlign:'center'}},
+        h('div',{style:{fontSize:'48px',marginBottom:'12px'}},'💾'),
+        h('div',{className:'card-t',style:{marginBottom:'8px'}},'임시저장 완료'),
+        h('div',{className:'card-s',style:{marginBottom:'16px'}},
+          '단말기 소유자와 연락이 닿으면',h('br'),'미완료 접수함에서 본인인증을 진행해주세요.'
+        ),
+        h('div',{style:{background:'#F1F5F9',borderRadius:'10px',padding:'14px',marginBottom:'16px'}},
+          h('div',{style:{fontSize:'11px',color:'#64748B',fontWeight:'700',marginBottom:'5px'}},'접수번호'),
+          h('div',{style:{fontFamily:'monospace',fontSize:'15px',fontWeight:'800',color:'#0D1B2A'}},receiptNumber)
+        )
+      ),
+      h('div',{className:'bb'},
+        h('button',{className:'btn-sk',onClick:props.onGoHome},'홈으로'),
+        h('button',{className:'btn-p',onClick:props.onGoPending},'📋 미완료 접수 확인 →')
+      )
+    );
+  }
+
   return h('div',{className:'pg',style:{paddingBottom:'90px'}},
-    h('div',{className:'al-lock'},'🔒 ',h('strong',null,'판정 결과를 확인하려면 본인 인증이 필요합니다.'),h('br'),'앞 단계에서 인증을 건너뛰셨습니다. 결과 열람을 위해 아래에서 인증을 완료해주세요.'),
+    h('div',{className:'al-lock'},'🔒 ',h('strong',null,'판정 결과 확인을 위한 본인 인증'),h('br'),'단말기 소유자 본인의 정보로 인증해주세요. 지금 연락이 어려우면 아래 ',h('strong',null,'"임시저장"'),' 후 나중에 이어서 진행할 수 있습니다.'),
     h('div',{className:'card'},
-      h('div',{className:'card-t'},'본인 인증 ',h('span',{style:{fontSize:'13px',color:'#DC2626',fontWeight:'600'}},'(2차 · 필수)')),
+      h('div',{className:'card-t'},'본인 인증'),
       h('div',{className:'card-s'},'이름, 통신사, 연락처를 입력해주세요.'),
       h('div',{className:'frow'},h('label',{className:'flabel'},'이름'),
         h('input',{className:'finput',placeholder:'홍길동',value:name,onChange:function(e){setName(e.target.value);}})),
@@ -396,15 +606,154 @@ function Auth2(props) {
       err&&h('div',{className:'al al-err'},'⚠️ '+err)
     ),
     h('div',{className:'bb'},
-      h('button',{className:'btn-p',disabled:!valid,onClick:submit},'인증 완료 후 결과 보기')
+      h('button',{className:'btn-warn',style:{flex:1},onClick:saveForLater},'💾 임시저장'),
+      h('button',{className:'btn-p',style:{flex:2},disabled:!valid,onClick:submit},'인증 완료 후 결과 보기')
     )
   );
 }
 
-// ── 6. 판정 결과 ──
+// ── 미완료 접수 목록 페이지 (변경 3번 하위 기능) ──
+function PendingList(props) {
+  var s1 = useState(loadPending());
+  var list = s1[0], setList = s1[1];
+
+  function refresh(){ setList(loadPending()); }
+
+  function del(receiptNumber, e){
+    e.stopPropagation();
+    if(confirm('접수번호 '+receiptNumber+'을(를) 삭제하시겠습니까?')){
+      removePending(receiptNumber);
+      refresh();
+    }
+  }
+
+  function fmtDate(iso){
+    try {
+      var d = new Date(iso);
+      var mm = String(d.getMonth()+1).padStart(2,'0');
+      var dd = String(d.getDate()).padStart(2,'0');
+      var hh = String(d.getHours()).padStart(2,'0');
+      var mi = String(d.getMinutes()).padStart(2,'0');
+      return mm+'/'+dd+' '+hh+':'+mi;
+    } catch(e){ return ''; }
+  }
+
+  return h('div',{className:'pg'},
+    h('div',{className:'card',style:{marginBottom:'13px'}},
+      h('div',{className:'card-t'},'📋 미완료 접수함'),
+      h('div',{className:'card-s',style:{marginBottom:'0'}},
+        '본인인증을 마치지 못한 접수 건들을 여기서 이어서 진행할 수 있어요.'
+      )
+    ),
+    list.length===0 ?
+      h('div',{className:'card'},
+        h('div',{className:'saved-empty'},
+          h('div',{className:'saved-empty-i'},'📭'),
+          h('div',{className:'saved-empty-t'},'미완료 접수가 없습니다'),
+          h('div',{className:'saved-empty-s'},'접수 진행 중 임시저장하면 여기에 표시됩니다')
+        )
+      )
+    :
+      list.map(function(item){
+        var grade = item.result && item.result.final_grade;
+        var gcfg = grade && GC[grade];
+        return h('div',{key:item.receiptNumber,className:'saved-card',onClick:function(){props.onOpen(item);}},
+          h('div',{className:'saved-h'},
+            h('div',{className:'saved-num'}, item.receiptNumber),
+            h('div',{className:'saved-status status-'+(item.status||'pending')},
+              item.status==='completed'?'검수완료':'본인인증 대기'
+            )
+          ),
+          h('div',{className:'saved-info'},
+            h('span',null,'📅 ',fmtDate(item.savedAt)),
+            h('span',null,'📸 ',item.method==='mri'?'MRI':'직접',' · ',(item.photos||[]).length,'장'),
+            gcfg && h('span',{style:{color:gcfg.color,fontWeight:'800'}},gcfg.emoji+' '+grade)
+          ),
+          (item.photos && item.photos.length>0) && h('div',{className:'saved-thumbs'},
+            item.photos.slice(0,6).map(function(p,i){return h('img',{key:i,src:p.url,alt:'p'+i});})
+          ),
+          h('div',{style:{display:'flex',gap:'6px',marginTop:'10px'}},
+            h('button',{className:'btn-p',style:{padding:'9px 0',fontSize:'12px'},
+              onClick:function(e){e.stopPropagation();props.onOpen(item);}},
+              '📝 본인인증 진행하기'
+            ),
+            h('button',{style:{background:'#FEE2E2',color:'#991B1B',border:'1px solid #FECACA',borderRadius:'10px',padding:'9px 14px',fontSize:'12px',fontWeight:'700',cursor:'pointer'},
+              onClick:function(e){del(item.receiptNumber,e);}},
+              '🗑️'
+            )
+          )
+        );
+      }),
+    h('button',{className:'btn-sk',onClick:props.onGoHome,style:{marginTop:'16px'}},
+      '← 홈으로'
+    )
+  );
+}
+
+// ── 등급 변경 모달 ──
+function GradeChangeModal(props) {
+  var s1 = useState(props.currentGrade);
+  var newGrade = s1[0], setNewGrade = s1[1];
+  var s2 = useState('');
+  var reason = s2[0], setReason = s2[1];
+  var s3 = useState('');
+  var err = s3[0], setErr = s3[1];
+
+  function submit(){
+    if(!newGrade){setErr('변경할 등급을 선택해주세요.');return;}
+    if(newGrade===props.currentGrade){setErr('현재 등급과 다른 등급을 선택해주세요.');return;}
+    if(!reason.trim() || reason.trim().length<5){setErr('변경 사유를 5자 이상 입력해주세요.');return;}
+    props.onConfirm(newGrade, reason.trim());
+  }
+
+  return h('div',{className:'modal-bg',onClick:props.onClose},
+    h('div',{className:'modal',onClick:function(e){e.stopPropagation();}},
+      h('div',{className:'modal-h'},
+        h('h3',null,'등급 변경'),
+        h('button',{className:'modal-x',onClick:props.onClose},'✕')
+      ),
+      h('div',{className:'modal-b'},
+        h('div',{style:{fontSize:'12px',color:'#64748B',marginBottom:'10px'}},
+          '현재 AI 판정: ',h('strong',{style:{color:GC[props.currentGrade].color}},props.currentGrade)
+        ),
+        h('div',{className:'frow'},
+          h('label',{className:'flabel'},'변경할 등급'),
+          h('select',{className:'fselect',value:newGrade,onChange:function(e){setNewGrade(e.target.value);}},
+            h('option',{value:''},'등급 선택'),
+            Object.entries(GC).map(function(e){
+              return h('option',{key:e[0],value:e[0]},e[1].emoji+' '+e[0]+' ('+e[1].ko+')');
+            })
+          )
+        ),
+        h('div',{className:'frow'},
+          h('label',{className:'flabel'},'변경 사유'),
+          h('textarea',{className:'ftext',placeholder:'예: 후면 하단 모서리에 육안으로 뚜렷하게 보이는 찍힘이 있어 Normal로 하향',
+            value:reason,onChange:function(e){setReason(e.target.value);}})
+        ),
+        err&&h('div',{className:'al al-err'},'⚠️ '+err),
+        h('button',{className:'btn-p',onClick:submit},'변경 확정')
+      )
+    )
+  );
+}
+
+// ── 5. 판정 결과 (변경 5번: 검수자 버튼 3개 추가) ──
 function Result(props) {
   var result=props.result,photos=props.photos,authInfo=props.authInfo;
-  var grade=result.final_grade||'';
+
+  // 검수 상태
+  var s1 = useState(null); // null | 'approved' | 'changed'
+  var reviewStatus = s1[0], setReviewStatus = s1[1];
+  var s2 = useState(result.final_grade);
+  var currentGrade = s2[0], setCurrentGrade = s2[1];
+  var s3 = useState(null);
+  var changeReason = s3[0], setChangeReason = s3[1];
+  var s4 = useState(false);
+  var showChangeModal = s4[0], setShowChangeModal = s4[1];
+  var s5 = useState(false);
+  var sent = s5[0], setSent = s5[1];
+
+  var grade=currentGrade||'';
   var cfg=GC[grade]||{ko:grade,color:'#64748B',bg:'#F1F5F9',emoji:'❓'};
   var di=result.device_info||{};
   var model=di.model_name||'';
@@ -414,6 +763,35 @@ function Result(props) {
   var priceKey=null;
   Object.keys(PRICES).forEach(function(k){if(model.indexOf(k)>=0)priceKey=k;});
   var prices=priceKey?PRICES[priceKey]:null;
+
+  function approve(){
+    setReviewStatus('approved');
+  }
+  function openChange(){
+    setShowChangeModal(true);
+  }
+  function confirmChange(newGrade, reason){
+    setCurrentGrade(newGrade);
+    setChangeReason(reason);
+    setReviewStatus('changed');
+    setShowChangeModal(false);
+  }
+  function send(){
+    setSent(true);
+    // 접수 상태를 completed로 변경
+    if(props.receiptNumber){
+      var list = loadPending();
+      list.forEach(function(item){
+        if(item.receiptNumber===props.receiptNumber){
+          item.status='completed';
+          item.reviewedGrade = currentGrade;
+          item.changeReason = changeReason;
+        }
+      });
+      savePending(list);
+    }
+    setTimeout(function(){alert('📨 판정 결과 발송 처리되었습니다.\n(현재 데모: 실제 발송 로직은 추후 연동 예정)');}, 100);
+  }
 
   // decision_path
   var dp=result.decision_path;
@@ -452,7 +830,6 @@ function Result(props) {
     );
   }
 
-  // device_info 필드 목록 (IMEI/일련번호 포함)
   var diFields=[
     ['모델명',model],
     ['모델번호',di.model_number],
@@ -465,20 +842,47 @@ function Result(props) {
   ].filter(function(x){return x[1]&&x[1]!=='null'&&x[1]!=='undefined'&&x[1]!=='미수집';});
 
   return h('div',{className:'pg'},
+    showChangeModal && h(GradeChangeModal,{
+      currentGrade: currentGrade,
+      onClose: function(){setShowChangeModal(false);},
+      onConfirm: confirmChange
+    }),
+    // 접수번호 표시
+    props.receiptNumber && h('div',{style:{background:'#F1F5F9',borderRadius:'10px',padding:'10px 14px',marginBottom:'13px',display:'flex',justifyContent:'space-between',alignItems:'center'}},
+      h('span',{style:{fontSize:'11px',color:'#64748B',fontWeight:'700'}},'접수번호'),
+      h('span',{style:{fontFamily:'monospace',fontSize:'13px',fontWeight:'800',color:'#0D1B2A'}},props.receiptNumber)
+    ),
     // 등급 카드
     h('div',{className:'rg-card',style:{background:cfg.bg}},
       h('div',{style:{fontSize:'44px',marginBottom:'5px'}},cfg.emoji),
       h('div',{className:'rg-name',style:{color:cfg.color}},grade),
       h('div',{className:'rg-ko',style:{color:cfg.color}},cfg.ko+' 등급'),
-      h('span',{className:'rg-conf',style:{color:cfg.color}},'신뢰도: '+confLabel)
+      h('span',{className:'rg-conf',style:{color:cfg.color}},'신뢰도: '+confLabel),
+      reviewStatus==='changed' && h('div',{style:{marginTop:'10px',fontSize:'11px',color:cfg.color,fontWeight:'700'}},'⚡ 검수자가 조정한 등급입니다')
     ),
-    // 사진 미니
     photos.length>0&&h('div',{className:'pt-mini'},
       photos.map(function(p,i){return h('img',{key:i,src:p.url,alt:'p'+i});})
     ),
-    // 인증 정보
     authInfo&&h('div',{className:'al al-ok'},'✅ 인증 완료 · '+authInfo.name+' ('+authInfo.carrier+' · '+authInfo.phone+')'),
-    // 기기 정보 (IMEI 포함)
+
+    // 🔥 검수자 승인 섹션 (변경 5번)
+    h('div',{className:'card',style:{padding:'16px 18px',background:reviewStatus?'#F0FDF4':'#FEF3C7',borderColor:reviewStatus?'#00C473':'#F59E0B'}},
+      h('div',{style:{fontWeight:'800',fontSize:'14px',marginBottom:'6px',color:reviewStatus?'#059669':'#92400E'}},
+        reviewStatus ? '✅ 검수자 확인 완료' : '👤 검수자 확인 필요'
+      ),
+      h('div',{style:{fontSize:'12px',color:'#4A5568',marginBottom:'12px',lineHeight:'1.6'}},
+        reviewStatus==='approved' ? 'AI 판정 결과를 검수자가 승인하였습니다.' :
+        reviewStatus==='changed' ? '검수자가 등급을 조정하였습니다. 사유: '+changeReason :
+        'AI 판정 결과를 확인 후 승인 또는 등급 변경을 진행해주세요.'
+      ),
+      !reviewStatus && h('div',{className:'rvw-btns'},
+        h('button',{className:'rvw-btn approve',onClick:approve},'✅ 검수자 승인'),
+        h('button',{className:'rvw-btn change',onClick:openChange},'⚡ 등급 변경')
+      ),
+      reviewStatus && !sent && h('button',{className:'btn-blue',onClick:send},'📨 판정 결과 발송하기'),
+      sent && h('div',{className:'rvw-status'},'✅ 판정 결과가 발송되었습니다')
+    ),
+
     diFields.length>0&&h('div',{className:'card',style:{padding:'16px 18px'}},
       h('div',{style:{fontWeight:'700',fontSize:'14px',marginBottom:'11px'}},'📱 기기 정보 (OCR)'),
       diFields.map(function(x){
@@ -489,7 +893,6 @@ function Result(props) {
         );
       })
     ),
-    // 5등급 매입가
     h('div',{className:'card',style:{padding:'16px 18px'}},
       h('div',{style:{fontWeight:'700',fontSize:'14px',marginBottom:'11px'}},
         '💰 5등급 예상 매입가',
@@ -511,19 +914,15 @@ function Result(props) {
         })
       )):h('div',{className:'al al-warn'},'ℹ️ '+(model?("'"+model+"' 모델의 매입가 정보가 없습니다."):'모델명을 인식하지 못했습니다.')+' 담당자에게 문의해주세요.')
     ),
-    // Decision Path
     dpSection,
-    // 판정 근거
     result.summary&&h('div',{className:'card',style:{padding:'16px 18px'}},
       h('div',{style:{fontWeight:'700',fontSize:'14px',marginBottom:'9px'}},'🔍 판정 근거'),
       h('div',{className:'jbox'},result.summary),
-      // area_summary
       areaSection&&h('div',null,
         h('div',{style:{fontWeight:'700',fontSize:'13px',margin:'14px 0 8px'}},'부위별 상태'),
         areaSection
       )
     ),
-    // 부위별 상세 분석
     result.analysis&&h('div',{className:'card',style:{padding:'16px 18px'}},
       h('div',{style:{fontWeight:'700',fontSize:'14px',marginBottom:'9px'}},'📋 부위별 상세'),
       ['display','back','bezel','camera','lcd'].map(function(k){
@@ -541,33 +940,103 @@ function Result(props) {
 }
 
 // ── 메인 앱 ──
+// view: 'flow' | 'pending'
+// step (flow일 때): 0=landing, 1=method, 2=upload, 3=auth, 4=result
 function App() {
-  var s0=useState(0);var step=s0[0],setStep=s0[1];
-  var s1=useState(false);var auth1Done=s1[0],setAuth1Done=s1[1];
-  var s2=useState(null);var auth1Info=s2[0],setAuth1Info=s2[1];
-  var s3=useState(null);var authFinal=s3[0],setAuthFinal=s3[1];
-  var s4=useState(null);var method=s4[0],setMethod=s4[1];
-  var s5=useState(null);var result=s5[0],setResult=s5[1];
-  var s6=useState([]);var photos=s6[0],setPhotos=s6[1];
+  var s0=useState('flow');var view=s0[0],setView=s0[1];
+  var s1=useState(0);var step=s1[0],setStep=s1[1];
+  var s2=useState(null);var method=s2[0],setMethod=s2[1];
+  var s3=useState(null);var result=s3[0],setResult=s3[1];
+  var s4=useState([]);var photos=s4[0],setPhotos=s4[1];
+  var s5=useState(null);var authFinal=s5[0],setAuthFinal=s5[1];
+  var s6=useState(null);var receiptNumber=s6[0],setReceiptNumber=s6[1];
+  var s7=useState(null);var savedAuthInfo=s7[0],setSavedAuthInfo=s7[1];
 
-  function restart(){setStep(0);setAuth1Done(false);setAuth1Info(null);setAuthFinal(null);setMethod(null);setResult(null);setPhotos([]);}
+  function restart(){
+    setView('flow');
+    setStep(0);
+    setMethod(null);
+    setResult(null);
+    setPhotos([]);
+    setAuthFinal(null);
+    setReceiptNumber(null);
+    setSavedAuthInfo(null);
+  }
 
+  function goHome(){ restart(); }
+  function goPending(){ setView('pending'); }
+
+  function openPendingItem(item){
+    // 저장된 접수 건 이어하기: 사진 복원, 판정 결과 복원 후 본인인증 단계로
+    setReceiptNumber(item.receiptNumber);
+    setMethod(item.method);
+    setResult(item.result);
+    setSavedAuthInfo(item.authInfo);
+    // 저장된 photos 형태를 프론트 형태로 복원
+    var restoredPhotos = (item.photos||[]).map(function(p,i){
+      return {
+        url: p.url,
+        b64: p.b64,
+        file: {type: p.mediaType||'image/jpeg', name:'photo_'+i}
+      };
+    });
+    setPhotos(restoredPhotos);
+    setView('flow');
+    setStep(3); // 본인인증 단계로 이동
+  }
+
+  // 미완료 접수함 뷰
+  if(view==='pending'){
+    return h('div',null,
+      h(Header,{onGoHome:goHome,onGoPending:goPending}),
+      h(PendingList,{onOpen:openPendingItem,onGoHome:goHome})
+    );
+  }
+
+  // 일반 플로우 뷰
   return h('div',null,
-    h(Header),
-    step>0&&h(StepBar,{cur:step}),
-    step===0&&h(Landing,{onNext:function(){setStep(1);}}),
-    step===1&&h(Auth1,{
-      onDone:function(info){setAuth1Done(true);setAuth1Info(info);setStep(2);},
-      onSkip:function(){setAuth1Done(false);setAuth1Info(null);setStep(2);}
+    h(Header,{onGoHome:goHome,onGoPending:goPending}),
+    step>0 && h(StepBar,{cur:step}),
+    step===0 && h(Landing,{onNext:function(){setStep(1);}}),
+    step===1 && h(Method,{onSelect:function(m){setMethod(m);setStep(2);}}),
+    step===2 && h(Upload,{method:method,onResult:function(r,p){
+      setResult(r);
+      setPhotos(p);
+      // 접수번호가 없으면 이 시점에 생성
+      if(!receiptNumber) setReceiptNumber(genReceiptNumber());
+      setStep(3);
+    }}),
+    step===3 && h(Auth,{
+      photos: photos,
+      method: method,
+      result: result,
+      receiptNumber: receiptNumber,
+      savedInfo: savedAuthInfo,
+      onDone: function(info){
+        setAuthFinal(info);
+        // 저장돼 있던 임시저장 건은 completed 처리
+        if(receiptNumber){
+          var list = loadPending();
+          list.forEach(function(item){
+            if(item.receiptNumber===receiptNumber){
+              item.status='in_review';
+              item.authInfo=info;
+            }
+          });
+          savePending(list);
+        }
+        setStep(4);
+      },
+      onGoHome: goHome,
+      onGoPending: goPending
     }),
-    step===2&&h(Method,{onSelect:function(m){setMethod(m);setStep(3);}}),
-    step===3&&h(Upload,{method:method,onResult:function(r,p){setResult(r);setPhotos(p);setStep(4);}}),
-    step===4&&h(Auth2,{
-      auth1Done:auth1Done,
-      auth1Info:auth1Info,
-      onDone:function(info){setAuthFinal(info||auth1Info);setStep(5);}
-    }),
-    step===5&&h(Result,{result:result,photos:photos,authInfo:authFinal,onRestart:restart})
+    step===4 && h(Result,{
+      result: result,
+      photos: photos,
+      authInfo: authFinal,
+      receiptNumber: receiptNumber,
+      onRestart: restart
+    })
   );
 }
 

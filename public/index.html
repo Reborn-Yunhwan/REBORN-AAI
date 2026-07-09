@@ -259,8 +259,17 @@ function resizeImage(file, maxSize, quality){
 }
 
 var CARRIERS = ['SKT','KT','LGU+','SKT 알뜰폰','KT 알뜰폰','LGU+ 알뜰폰','기타'];
-// v19: 1차 인증 제외 → 소개→촬영방식→사진업로드→본인인증→판정결과
-var STEPS = ['소개','촬영방식','사진업로드','본인인증','판정결과'];
+// v20: 사용자 눈에 보이는 스텝은 3단계로 통합
+// 내부 step 0=Landing, 1=Method, 2=Upload, 3=Auth, 4=Result
+// 표시용 스텝: 0=사진촬영(Method+Upload 합침), 1=본인인증, 2=접수완료
+var STEPS = ['사진 촬영','본인 인증','접수완료·결과확인'];
+// 내부 step → 표시 step 매핑
+function stepDisplay(internalStep){
+  if(internalStep===1 || internalStep===2) return 0; // Method, Upload = "사진 촬영"
+  if(internalStep===3) return 1; // Auth = "본인 인증"
+  if(internalStep===4) return 2; // Result = "접수완료·결과확인"
+  return -1; // Landing은 스텝바 안보임
+}
 var AREA_LABELS = {front:'전면(액정)',back:'후면',bezel_side:'베젤/측면',camera:'카메라'};
 var AREA_STATUS = {clean:'양호',minor:'미세손상',notable:'손상있음'};
 
@@ -737,23 +746,11 @@ function GradeChangeModal(props) {
   );
 }
 
-// ── 5. 판정 결과 (변경 5번: 검수자 버튼 3개 추가) ──
+// ── 5. 판정 결과 (v20: 검수 단계 제거, 시연용 심플화) ──
 function Result(props) {
   var result=props.result,photos=props.photos,authInfo=props.authInfo;
 
-  // 검수 상태
-  var s1 = useState(null); // null | 'approved' | 'changed'
-  var reviewStatus = s1[0], setReviewStatus = s1[1];
-  var s2 = useState(result.final_grade);
-  var currentGrade = s2[0], setCurrentGrade = s2[1];
-  var s3 = useState(null);
-  var changeReason = s3[0], setChangeReason = s3[1];
-  var s4 = useState(false);
-  var showChangeModal = s4[0], setShowChangeModal = s4[1];
-  var s5 = useState(false);
-  var sent = s5[0], setSent = s5[1];
-
-  var grade=currentGrade||'';
+  var grade=result.final_grade||'';
   var cfg=GC[grade]||{ko:grade,color:'#64748B',bg:'#F1F5F9',emoji:'❓'};
   var di=result.device_info||{};
   var model=di.model_name||'';
@@ -763,35 +760,6 @@ function Result(props) {
   var priceKey=null;
   Object.keys(PRICES).forEach(function(k){if(model.indexOf(k)>=0)priceKey=k;});
   var prices=priceKey?PRICES[priceKey]:null;
-
-  function approve(){
-    setReviewStatus('approved');
-  }
-  function openChange(){
-    setShowChangeModal(true);
-  }
-  function confirmChange(newGrade, reason){
-    setCurrentGrade(newGrade);
-    setChangeReason(reason);
-    setReviewStatus('changed');
-    setShowChangeModal(false);
-  }
-  function send(){
-    setSent(true);
-    // 접수 상태를 completed로 변경
-    if(props.receiptNumber){
-      var list = loadPending();
-      list.forEach(function(item){
-        if(item.receiptNumber===props.receiptNumber){
-          item.status='completed';
-          item.reviewedGrade = currentGrade;
-          item.changeReason = changeReason;
-        }
-      });
-      savePending(list);
-    }
-    setTimeout(function(){alert('📨 판정 결과 발송 처리되었습니다.\n(현재 데모: 실제 발송 로직은 추후 연동 예정)');}, 100);
-  }
 
   // decision_path
   var dp=result.decision_path;
@@ -842,11 +810,6 @@ function Result(props) {
   ].filter(function(x){return x[1]&&x[1]!=='null'&&x[1]!=='undefined'&&x[1]!=='미수집';});
 
   return h('div',{className:'pg'},
-    showChangeModal && h(GradeChangeModal,{
-      currentGrade: currentGrade,
-      onClose: function(){setShowChangeModal(false);},
-      onConfirm: confirmChange
-    }),
     // 접수번호 표시
     props.receiptNumber && h('div',{style:{background:'#F1F5F9',borderRadius:'10px',padding:'10px 14px',marginBottom:'13px',display:'flex',justifyContent:'space-between',alignItems:'center'}},
       h('span',{style:{fontSize:'11px',color:'#64748B',fontWeight:'700'}},'접수번호'),
@@ -857,31 +820,12 @@ function Result(props) {
       h('div',{style:{fontSize:'44px',marginBottom:'5px'}},cfg.emoji),
       h('div',{className:'rg-name',style:{color:cfg.color}},grade),
       h('div',{className:'rg-ko',style:{color:cfg.color}},cfg.ko+' 등급'),
-      h('span',{className:'rg-conf',style:{color:cfg.color}},'신뢰도: '+confLabel),
-      reviewStatus==='changed' && h('div',{style:{marginTop:'10px',fontSize:'11px',color:cfg.color,fontWeight:'700'}},'⚡ 검수자가 조정한 등급입니다')
+      h('span',{className:'rg-conf',style:{color:cfg.color}},'신뢰도: '+confLabel)
     ),
     photos.length>0&&h('div',{className:'pt-mini'},
       photos.map(function(p,i){return h('img',{key:i,src:p.url,alt:'p'+i});})
     ),
     authInfo&&h('div',{className:'al al-ok'},'✅ 인증 완료 · '+authInfo.name+' ('+authInfo.carrier+' · '+authInfo.phone+')'),
-
-    // 🔥 검수자 승인 섹션 (변경 5번)
-    h('div',{className:'card',style:{padding:'16px 18px',background:reviewStatus?'#F0FDF4':'#FEF3C7',borderColor:reviewStatus?'#00C473':'#F59E0B'}},
-      h('div',{style:{fontWeight:'800',fontSize:'14px',marginBottom:'6px',color:reviewStatus?'#059669':'#92400E'}},
-        reviewStatus ? '✅ 검수자 확인 완료' : '👤 검수자 확인 필요'
-      ),
-      h('div',{style:{fontSize:'12px',color:'#4A5568',marginBottom:'12px',lineHeight:'1.6'}},
-        reviewStatus==='approved' ? 'AI 판정 결과를 검수자가 승인하였습니다.' :
-        reviewStatus==='changed' ? '검수자가 등급을 조정하였습니다. 사유: '+changeReason :
-        'AI 판정 결과를 확인 후 승인 또는 등급 변경을 진행해주세요.'
-      ),
-      !reviewStatus && h('div',{className:'rvw-btns'},
-        h('button',{className:'rvw-btn approve',onClick:approve},'✅ 검수자 승인'),
-        h('button',{className:'rvw-btn change',onClick:openChange},'⚡ 등급 변경')
-      ),
-      reviewStatus && !sent && h('button',{className:'btn-blue',onClick:send},'📨 판정 결과 발송하기'),
-      sent && h('div',{className:'rvw-status'},'✅ 판정 결과가 발송되었습니다')
-    ),
 
     diFields.length>0&&h('div',{className:'card',style:{padding:'16px 18px'}},
       h('div',{style:{fontWeight:'700',fontSize:'14px',marginBottom:'11px'}},'📱 기기 정보 (OCR)'),
@@ -940,8 +884,6 @@ function Result(props) {
 }
 
 // ── 메인 앱 ──
-// view: 'flow' | 'pending'
-// step (flow일 때): 0=landing, 1=method, 2=upload, 3=auth, 4=result
 function App() {
   var s0=useState('flow');var view=s0[0],setView=s0[1];
   var s1=useState(0);var step=s1[0],setStep=s1[1];
@@ -967,12 +909,10 @@ function App() {
   function goPending(){ setView('pending'); }
 
   function openPendingItem(item){
-    // 저장된 접수 건 이어하기: 사진 복원, 판정 결과 복원 후 본인인증 단계로
     setReceiptNumber(item.receiptNumber);
     setMethod(item.method);
     setResult(item.result);
     setSavedAuthInfo(item.authInfo);
-    // 저장된 photos 형태를 프론트 형태로 복원
     var restoredPhotos = (item.photos||[]).map(function(p,i){
       return {
         url: p.url,
@@ -982,10 +922,26 @@ function App() {
     });
     setPhotos(restoredPhotos);
     setView('flow');
-    setStep(3); // 본인인증 단계로 이동
+    setStep(3);
   }
 
-  // 미완료 접수함 뷰
+  // 본인인증 완료 시: 다음 단계로 이동 (SMS/DB는 추후 연동)
+  function handleAuthDone(info){
+    setAuthFinal(info);
+    // 로컬 임시저장 정리
+    if(receiptNumber){
+      var list = loadPending();
+      list.forEach(function(item){
+        if(item.receiptNumber===receiptNumber){
+          item.status='completed';
+          item.authInfo=info;
+        }
+      });
+      savePending(list);
+    }
+    setStep(4);
+  }
+
   if(view==='pending'){
     return h('div',null,
       h(Header,{onGoHome:goHome,onGoPending:goPending}),
@@ -993,16 +949,14 @@ function App() {
     );
   }
 
-  // 일반 플로우 뷰
   return h('div',null,
     h(Header,{onGoHome:goHome,onGoPending:goPending}),
-    step>0 && h(StepBar,{cur:step}),
+    step>0 && h(StepBar,{cur:stepDisplay(step)}),
     step===0 && h(Landing,{onNext:function(){setStep(1);}}),
     step===1 && h(Method,{onSelect:function(m){setMethod(m);setStep(2);}}),
     step===2 && h(Upload,{method:method,onResult:function(r,p){
       setResult(r);
       setPhotos(p);
-      // 접수번호가 없으면 이 시점에 생성
       if(!receiptNumber) setReceiptNumber(genReceiptNumber());
       setStep(3);
     }}),
@@ -1012,21 +966,7 @@ function App() {
       result: result,
       receiptNumber: receiptNumber,
       savedInfo: savedAuthInfo,
-      onDone: function(info){
-        setAuthFinal(info);
-        // 저장돼 있던 임시저장 건은 completed 처리
-        if(receiptNumber){
-          var list = loadPending();
-          list.forEach(function(item){
-            if(item.receiptNumber===receiptNumber){
-              item.status='in_review';
-              item.authInfo=info;
-            }
-          });
-          savePending(list);
-        }
-        setStep(4);
-      },
+      onDone: handleAuthDone,
       onGoHome: goHome,
       onGoPending: goPending
     }),

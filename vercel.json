@@ -1,12 +1,15 @@
 {
   "version": 2,
   "routes": [
-    { "src": "/api/grade", "dest": "/api/grade.js" },
+    { "src": "/api/receipts/([^/]+)", "dest": "/api/receipts/[number].js?number=$1" },
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/admin/?$", "dest": "/public/admin.html" },
     { "src": "/(.*)", "dest": "/public/index.html" }
   ],
   "functions": {
-    "api/grade.js": {
-      "maxDuration": 60
-    }
+    "api/grade.js": { "maxDuration": 60 },
+    "api/receipts.js": { "maxDuration": 15 },
+    "api/receipts/[number].js": { "maxDuration": 10 },
+    "api/login.js": { "maxDuration": 10 }
   }
 }

@@ -1,0 +1,8 @@
+{
+  "name": "reborn-aai",
+  "version": "1.0.0",
+  "description": "Ribbon AI Grader with Admin - v21",
+  "dependencies": {
+    "@vercel/kv": "^2.0.0"
+  }
+}

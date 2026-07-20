@@ -925,7 +925,7 @@ function App() {
     setStep(3);
   }
 
-  // 본인인증 완료 시: 다음 단계로 이동 (SMS/DB는 추후 연동)
+  // 본인인증 완료 시: DB에 접수 저장 + 다음 단계로
   function handleAuthDone(info){
     setAuthFinal(info);
     // 로컬 임시저장 정리
@@ -940,6 +940,19 @@ function App() {
       savePending(list);
     }
     setStep(4);
+
+    // 백엔드 DB에 접수 저장 (실패해도 다음 단계 진행)
+    fetch('/api/receipts',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        receiptNumber: receiptNumber,
+        result: result,
+        photos: photos.map(function(p){return {url:p.url,mediaType:p.file.type};}),
+        authInfo: info,
+        method: method
+      })
+    }).catch(function(e){ console.error('접수 저장 실패:', e); });
   }
 
   if(view==='pending'){

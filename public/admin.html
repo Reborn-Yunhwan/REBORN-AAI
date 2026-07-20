@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>리본 AI 판정기 · 관리자</title>
+<style>
+:root{--green:#00C473;--green-d:#009E5B;--green-l:#E6FAF3;--navy:#0D1B2A;--gray:#F5F7FA;--border:#E2E8F0;--text:#1A202C;--texts:#4A5568;--textm:#94A3B8;--r:12px;--rs:8px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(--gray);color:var(--text);min-height:100vh}
+.hd{background:var(--navy);color:#fff;height:60px;padding:0 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.hd-mark{width:32px;height:32px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px}
+.hd-name{font-weight:800;font-size:16px}
+.hd-badge{background:rgba(0,196,115,.2);color:#6EF4BE;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1px;margin-left:8px}
+.hd-user{margin-left:auto;font-size:13px;color:rgba(255,255,255,.8);display:flex;align-items:center;gap:12px}
+.hd-logout{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.hd-logout:hover{background:rgba(255,255,255,.2)}
+
+/* 로그인 */
+.login-bg{min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#f5f7fa 0%,#e2e8f0 100%)}
+.login-card{background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.1)}
+.login-t{font-size:22px;font-weight:800;text-align:center;margin-bottom:6px}
+.login-s{font-size:13px;color:var(--texts);text-align:center;margin-bottom:26px}
+.frow{margin-bottom:14px}
+.flabel{font-size:12px;font-weight:700;color:var(--texts);margin-bottom:6px;display:block}
+.finput{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;font-size:14px;outline:none;transition:border-color .2s;background:#fff;font-family:inherit}
+.finput:focus{border-color:var(--green)}
+.btn-p{background:var(--green);color:#fff;border:none;border-radius:10px;padding:12px 0;font-size:14px;font-weight:700;cursor:pointer;width:100%;font-family:inherit;transition:background .2s}
+.btn-p:hover{background:var(--green-d)}
+.btn-p:disabled{background:var(--textm);cursor:not-allowed}
+.btn-sk{background:#fff;color:var(--texts);border:1.5px solid var(--border);border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+.btn-sk:hover{border-color:var(--green);color:var(--green-d)}
+.btn-blue{background:#2563EB;color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .2s}
+.btn-blue:hover{background:#1D4ED8}
+.btn-warn{background:#F59E0B;color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .2s}
+.btn-warn:hover{background:#D97706}
+.btn-danger{background:#DC2626;color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .2s}
+.btn-danger:hover{background:#B91C1C}
+.al{border-radius:9px;padding:10px 13px;font-size:12px;margin-bottom:12px;line-height:1.5}
+.al-err{background:#FEF2F2;color:#991B1B;border:1px solid #FECACA}
+.al-info{background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE}
+
+/* 대시보드 레이아웃 */
+.pg{max-width:1400px;margin:0 auto;padding:24px}
+.pg-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.pg-t{font-size:22px;font-weight:800}
+.pg-s{font-size:13px;color:var(--texts);margin-top:4px}
+
+/* 통계 카드 */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.stat{background:#fff;border-radius:var(--r);padding:16px 18px;border:1px solid var(--border);display:flex;flex-direction:column;gap:4px}
+.stat-l{font-size:11px;color:var(--textm);font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.stat-v{font-size:24px;font-weight:800;color:var(--navy)}
+.stat-s{font-size:11px;color:var(--texts)}
+
+/* 필터바 */
+.filter-bar{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.filter-bar .search-in{flex:1;min-width:200px;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;outline:none;font-family:inherit}
+.filter-bar .search-in:focus{border-color:var(--green)}
+.filter-bar select{border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;background:#fff;cursor:pointer;font-family:inherit;color:var(--text)}
+
+/* 테이블 */
+.tbl-wrap{background:#fff;border-radius:var(--r);border:1px solid var(--border);overflow:hidden}
+.tbl-scroll{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;min-width:1100px}
+.tbl th{background:#F8FAFC;padding:11px 12px;text-align:left;font-size:11px;font-weight:800;color:var(--texts);text-transform:uppercase;letter-spacing:.5px;border-bottom:1.5px solid var(--border);white-space:nowrap}
+.tbl td{padding:11px 12px;font-size:13px;border-bottom:1px solid #F1F5F9;vertical-align:middle}
+.tbl tr:hover td{background:#FAFBFC;cursor:pointer}
+.tbl tr:last-child td{border-bottom:none}
+.tbl-num{font-family:'SF Mono',Consolas,monospace;font-size:12px;font-weight:700;color:var(--navy);background:var(--gray);padding:3px 7px;border-radius:5px;white-space:nowrap}
+.tbl-thumb{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--border);flex-shrink:0}
+.tbl-thumb-empty{width:44px;height:44px;border-radius:6px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--textm);font-size:16px;background:#F8FAFC}
+.gr-pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:800;white-space:nowrap}
+.stat-pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:800;white-space:nowrap;background:#DBEAFE;color:#1E40AF}
+.stat-pill.reviewed{background:#FEF3C7;color:#92400E}
+.method-pill{display:inline-block;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:700;white-space:nowrap;background:#F1F5F9;color:var(--texts);border:1px solid var(--border)}
+.method-pill.mri{background:#EFF6FF;color:#1E40AF;border-color:#BFDBFE}
+.empty-row{text-align:center;padding:60px 20px;color:var(--textm)}
+.empty-icon{font-size:44px;margin-bottom:10px}
+.empty-t{font-size:15px;font-weight:700;color:var(--texts);margin-bottom:5px}
+.empty-s{font-size:12px}
+
+/* 상세 모달 */
+.modal-bg{position:fixed;inset:0;background:rgba(13,27,42,.7);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px;overflow-y:auto}
+.modal{background:#fff;border-radius:16px;max-width:720px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.modal-h{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2;border-radius:16px 16px 0 0}
+.modal-h h3{font-size:17px;font-weight:800}
+.modal-x{background:#F1F5F9;border:none;width:30px;height:30px;border-radius:50%;font-size:16px;cursor:pointer;color:var(--texts);display:flex;align-items:center;justify-content:center;padding:0}
+.modal-b{padding:18px 22px 22px}
+.modal-section{margin-bottom:18px}
+.modal-section-t{font-size:12px;font-weight:800;color:var(--texts);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px}
+.info-item{padding:8px 0;border-bottom:1px solid #F1F5F9}
+.info-l{font-size:11px;color:var(--textm);font-weight:600;margin-bottom:2px}
+.info-v{font-size:13px;font-weight:600;color:var(--text);word-break:break-all}
+.imei-val{font-family:'SF Mono',Consolas,monospace;font-size:12px;background:var(--gray);padding:2px 6px;border-radius:4px;display:inline-block}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
+.photo-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer}
+.grade-badge-big{display:inline-block;padding:8px 18px;border-radius:20px;font-size:16px;font-weight:800;margin-bottom:8px}
+.review-info{background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;padding:11px 14px;font-size:12px;color:#92400E;margin-bottom:12px;line-height:1.6}
+.review-info strong{color:#78350F}
+.modal-actions{display:flex;gap:8px;flex-wrap:wrap;padding-top:14px;border-top:1px solid var(--border)}
+.summary-box{background:#F8FAFC;border-left:3px solid var(--green);border-radius:6px;padding:11px 13px;font-size:12px;color:var(--texts);line-height:1.7}
+
+/* 수정 모달 */
+.change-modal{max-width:460px}
+.fselect{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;outline:none;background:#fff;cursor:pointer;font-family:inherit}
+.ftext{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;outline:none;background:#fff;font-family:inherit;resize:vertical;min-height:80px}
+
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:sp .8s linear infinite;margin:40px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+
+var h = React.createElement;
+var useState = React.useState;
+var useEffect = React.useEffect;
+var useMemo = React.useMemo;
+
+// 등급 설정
+var GC = {
+  'Excellent':  {ko:'최상',  color:'#7C3AED', bg:'#F5F3FF', emoji:'✨'},
+  'Very Good':  {ko:'우수',  color:'#059669', bg:'#ECFDF5', emoji:'💚'},
+  'Good':       {ko:'양호',  color:'#2563EB', bg:'#EFF6FF', emoji:'💙'},
+  'Normal':     {ko:'보통',  color:'#D97706', bg:'#FFFBEB', emoji:'🟡'},
+  'Bad':        {ko:'미흡',  color:'#DC2626', bg:'#FEF2F2', emoji:'🔴'},
+  '검수불가':   {ko:'검수불가',color:'#64748B',bg:'#F1F5F9', emoji:'⛔'},
+};
+
+// 매입가
+var PRICES = {
+  'Galaxy S24':       {Excellent:680000,'Very Good':580000,Good:460000,Normal:340000,Bad:140000},
+  'Galaxy S24 Ultra': {Excellent:980000,'Very Good':840000,Good:680000,Normal:460000,Bad:180000},
+  'Galaxy S23':       {Excellent:520000,'Very Good':440000,Good:350000,Normal:240000,Bad:100000},
+  'Galaxy S23 Ultra': {Excellent:720000,'Very Good':620000,Good:500000,Normal:340000,Bad:140000},
+  'Galaxy A55':       {Excellent:320000,'Very Good':270000,Good:210000,Normal:140000,Bad:60000},
+  'iPhone 16':        {Excellent:920000,'Very Good':780000,Good:620000,Normal:420000,Bad:170000},
+  'iPhone 15 Pro Max':{Excellent:1100000,'Very Good':940000,Good:760000,Normal:520000,Bad:210000},
+  'iPhone 15 Pro':    {Excellent:980000,'Very Good':840000,Good:680000,Normal:460000,Bad:180000},
+  'iPhone 15':        {Excellent:780000,'Very Good':660000,Good:520000,Normal:360000,Bad:150000},
+  'iPhone 14':        {Excellent:620000,'Very Good':520000,Good:410000,Normal:280000,Bad:110000},
+  'iPhone 13':        {Excellent:480000,'Very Good':400000,Good:320000,Normal:220000,Bad:90000},
+};
+function lookupPrice(modelName, grade){
+  if(!modelName || !grade) return null;
+  var key = null;
+  Object.keys(PRICES).forEach(function(k){ if(modelName.indexOf(k) >= 0) key = k; });
+  if(!key) return null;
+  return PRICES[key][grade] || null;
+}
+function fmt(n){ return n ? n.toLocaleString()+'원' : '-'; }
+function fmtDate(iso){
+  if(!iso) return '-';
+  try {
+    var d = new Date(iso);
+    var yy = String(d.getFullYear()).slice(2);
+    var mm = String(d.getMonth()+1).padStart(2,'0');
+    var dd = String(d.getDate()).padStart(2,'0');
+    var hh = String(d.getHours()).padStart(2,'0');
+    var mi = String(d.getMinutes()).padStart(2,'0');
+    return yy+'/'+mm+'/'+dd+' '+hh+':'+mi;
+  } catch(e){ return '-'; }
+}
+
+// 세션 관리
+function getSession(){
+  try {
+    var s = JSON.parse(localStorage.getItem('ribbon_admin_session') || 'null');
+    if(!s || !s.token || !s.expiresAt) return null;
+    if(Date.now() > s.expiresAt) { localStorage.removeItem('ribbon_admin_session'); return null; }
+    return s;
+  } catch(e){ return null; }
+}
+function saveSession(s){ localStorage.setItem('ribbon_admin_session', JSON.stringify(s)); }
+function clearSession(){ localStorage.removeItem('ribbon_admin_session'); }
+
+// ── 로그인 ──
+function Login(props){
+  var s1 = useState(''); var userId = s1[0], setUserId = s1[1];
+  var s2 = useState(''); var password = s2[0], setPassword = s2[1];
+  var s3 = useState(''); var err = s3[0], setErr = s3[1];
+  var s4 = useState(false); var loading = s4[0], setLoading = s4[1];
+
+  function submit(){
+    if(!userId || !password){ setErr('아이디와 비밀번호를 입력해주세요'); return; }
+    setErr(''); setLoading(true);
+    fetch('/api/login', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({userId: userId, password: password})
+    })
+    .then(function(r){ return r.json().then(function(d){return {ok:r.ok, data:d};}); })
+    .then(function(res){
+      if(!res.ok) throw new Error(res.data.error || '로그인 실패');
+      saveSession({token: res.data.token, userId: res.data.userId, expiresAt: res.data.expiresAt});
+      props.onLogin(res.data.userId);
+    })
+    .catch(function(e){ setErr(e.message); })
+    .finally(function(){ setLoading(false); });
+  }
+
+  return h('div', {className:'login-bg'},
+    h('div', {className:'login-card'},
+      h('div', {className:'login-t'}, '🔐 관리자 로그인'),
+      h('div', {className:'login-s'}, '리본 AI 판정기 관리자 페이지'),
+      h('div', {className:'frow'},
+        h('label', {className:'flabel'}, '아이디'),
+        h('input', {className:'finput', value:userId, autoFocus:true,
+          onChange:function(e){setUserId(e.target.value);},
+          onKeyDown:function(e){if(e.key==='Enter') submit();}
+        })
+      ),
+      h('div', {className:'frow'},
+        h('label', {className:'flabel'}, '비밀번호'),
+        h('input', {className:'finput', type:'password', value:password,
+          onChange:function(e){setPassword(e.target.value);},
+          onKeyDown:function(e){if(e.key==='Enter') submit();}
+        })
+      ),
+      err && h('div', {className:'al al-err'}, '⚠️ ' + err),
+      h('button', {className:'btn-p', disabled:loading, onClick:submit},
+        loading ? '로그인 중...' : '로그인'
+      )
+    )
+  );
+}
+
+// ── 등급 변경 모달 ──
+function GradeChangeModal(props){
+  var s1 = useState(props.currentGrade); var newGrade = s1[0], setNewGrade = s1[1];
+  var s2 = useState(''); var reason = s2[0], setReason = s2[1];
+  var s3 = useState(''); var err = s3[0], setErr = s3[1];
+  var s4 = useState(false); var loading = s4[0], setLoading = s4[1];
+
+  function submit(){
+    if(!newGrade){ setErr('변경할 등급을 선택해주세요'); return; }
+    if(newGrade === props.currentGrade){ setErr('현재 등급과 다른 등급을 선택해주세요'); return; }
+    if(!reason.trim() || reason.trim().length < 5){ setErr('수정 사유를 5자 이상 입력해주세요'); return; }
+    setErr(''); setLoading(true);
+    props.onSubmit(newGrade, reason.trim())
+      .catch(function(e){ setErr(e.message); setLoading(false); });
+  }
+
+  return h('div', {className:'modal-bg', onClick:props.onClose},
+    h('div', {className:'modal change-modal', onClick:function(e){e.stopPropagation();}},
+      h('div', {className:'modal-h'},
+        h('h3', null, '⚡ 등급 수정'),
+        h('button', {className:'modal-x', onClick:props.onClose}, '✕')
+      ),
+      h('div', {className:'modal-b'},
+        h('div', {style:{fontSize:'12px', color:'#64748B', marginBottom:'12px'}},
+          '현재 AI 판정: ',
+          h('strong', {style:{color: GC[props.currentGrade] ? GC[props.currentGrade].color : '#000'}},
+            props.currentGrade
+          )
+        ),
+        h('div', {className:'frow'},
+          h('label', {className:'flabel'}, '변경할 등급'),
+          h('select', {className:'fselect', value:newGrade, onChange:function(e){setNewGrade(e.target.value);}},
+            h('option', {value:''}, '등급 선택'),
+            Object.entries(GC).map(function(e){
+              return h('option', {key:e[0], value:e[0]}, e[1].emoji + ' ' + e[0] + ' (' + e[1].ko + ')');
+            })
+          )
+        ),
+        h('div', {className:'frow'},
+          h('label', {className:'flabel'}, '수정 사유'),
+          h('textarea', {className:'ftext',
+            placeholder:'예: 후면 하단 모서리 육안 확인되는 찍힘 있어 Normal로 하향',
+            value:reason, onChange:function(e){setReason(e.target.value);}
+          })
+        ),
+        err && h('div', {className:'al al-err'}, '⚠️ ' + err),
+        h('button', {className:'btn-p', disabled:loading, onClick:submit},
+          loading ? '저장 중...' : '수정 확정'
+        )
+      )
+    )
+  );
+}
+
+// ── 상세 모달 ──
+function DetailModal(props){
+  var s1 = useState(false); var showChange = s1[0], setShowChange = s1[1];
+  var r = props.receipt;
+  var grade = (r.result && r.result.final_grade) || '';
+  var cfg = GC[grade] || {ko:grade, color:'#64748B', bg:'#F1F5F9', emoji:'❓'};
+  var di = (r.result && r.result.device_info) || {};
+  var model = di.model_name || '';
+  var priceValue = lookupPrice(model, grade);
+  var priceText = priceValue ? priceValue.toLocaleString()+'원' : '-';
+  var isReviewed = !!r.reviewedGrade;
+
+  function submitGradeChange(newGrade, reason){
+    return fetch('/api/receipts/' + r.receiptNumber, {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json', 'X-Admin-Token': props.token},
+      body: JSON.stringify({newGrade: newGrade, reviewNote: reason})
+    })
+    .then(function(res){ return res.json().then(function(d){return {ok:res.ok, data:d};}); })
+    .then(function(res){
+      if(!res.ok) throw new Error(res.data.error || '수정 실패');
+      setShowChange(false);
+      props.onUpdated();
+    });
+  }
+
+  function del(){
+    if(!confirm('접수번호 ' + r.receiptNumber + '을(를) 삭제하시겠습니까?\n\n삭제된 데이터는 복구할 수 없습니다.')) return;
+    fetch('/api/receipts/' + r.receiptNumber, {
+      method:'DELETE',
+      headers:{'X-Admin-Token': props.token}
+    })
+    .then(function(res){ return res.json().then(function(d){return {ok:res.ok, data:d};}); })
+    .then(function(res){
+      if(!res.ok) throw new Error(res.data.error || '삭제 실패');
+      props.onDeleted();
+    })
+    .catch(function(e){ alert('삭제 실패: ' + e.message); });
+  }
+
+  return h('div', {className:'modal-bg', onClick:props.onClose},
+    showChange && h(GradeChangeModal, {
+      currentGrade: grade,
+      onClose: function(){setShowChange(false);},
+      onSubmit: submitGradeChange
+    }),
+    h('div', {className:'modal', onClick:function(e){e.stopPropagation();}},
+      h('div', {className:'modal-h'},
+        h('div', null,
+          h('h3', null, '접수 상세'),
+          h('div', {style:{fontFamily:'SF Mono, monospace', fontSize:'12px', color:'#64748B', marginTop:'3px'}},
+            r.receiptNumber
+          )
+        ),
+        h('button', {className:'modal-x', onClick:props.onClose}, '✕')
+      ),
+      h('div', {className:'modal-b'},
+        // 검수 이력 표시
+        isReviewed && h('div', {className:'review-info'},
+          '⚡ ',h('strong',null,'검수 수정 이력'),h('br'),
+          '원본 AI 판정: ', h('strong',null, r.originalGrade), ' → 수정 등급: ', h('strong',null, r.reviewedGrade),h('br'),
+          '수정자: ', h('strong',null, r.reviewedBy || '-'), ' · ', fmtDate(r.reviewedAt),h('br'),
+          '사유: ', r.reviewNote || '-'
+        ),
+        // 등급 & 매입가
+        h('div', {className:'modal-section', style:{textAlign:'center', padding:'16px', background:cfg.bg, borderRadius:'12px'}},
+          h('div', {style:{fontSize:'36px', marginBottom:'4px'}}, cfg.emoji),
+          h('div', {className:'grade-badge-big', style:{background:'#fff', color:cfg.color, border:'1.5px solid '+cfg.color}},
+            grade + ' (' + cfg.ko + ')'
+          ),
+          h('div', {style:{fontSize:'20px', fontWeight:'800', color:cfg.color, marginTop:'8px'}},
+            '예상 매입가 ', priceText
+          ),
+          model && h('div', {style:{fontSize:'11px', color:cfg.color, opacity:0.7, marginTop:'3px'}}, model)
+        ),
+        // 고객 정보
+        h('div', {className:'modal-section'},
+          h('div', {className:'modal-section-t'}, '고객 정보'),
+          h('div', {className:'info-grid'},
+            h('div', {className:'info-item'},
+              h('div', {className:'info-l'}, '이름'), h('div', {className:'info-v'}, r.authInfo && r.authInfo.name || '-')),
+            h('div', {className:'info-item'},
+              h('div', {className:'info-l'}, '연락처'), h('div', {className:'info-v'}, r.authInfo && r.authInfo.phone || '-')),
+            h('div', {className:'info-item'},
+              h('div', {className:'info-l'}, '통신사'), h('div', {className:'info-v'}, r.authInfo && r.authInfo.carrier || '-')),
+            h('div', {className:'info-item'},
+              h('div', {className:'info-l'}, '촬영 방식'), h('div', {className:'info-v'}, r.method==='mri'?'MRI 촬영':'직접 촬영'))
+          )
+        ),
+        // 기기 정보
+        (di.imei || di.battery_percent || di.storage) && h('div', {className:'modal-section'},
+          h('div', {className:'modal-section-t'}, '기기 정보 (OCR)'),
+          h('div', {className:'info-grid'},
+            di.storage && h('div', {className:'info-item'},
+              h('div', {className:'info-l'}, '저장 용량'), h('div', {className:'info-v'}, di.storage)),
+            di.imei && h('div', {className:'info-item'},
+              h('div', {className:'info-l'}, 'IMEI'),
+              h('div', {className:'info-v'}, h('span', {className:'imei-val'}, di.imei))),
+            di.battery_percent && h('div', {className:'info-item'},
+              h('div', {className:'info-l'}, '배터리'),
+              h('div', {className:'info-v'}, di.battery_percent+'%' + (di.battery_status?' ('+di.battery_status+')':''))),
+            di.carrier && h('div', {className:'info-item'},
+              h('div', {className:'info-l'}, '단말기 통신사'), h('div', {className:'info-v'}, di.carrier))
+          )
+        ),
+        // 판정 근거
+        r.result && r.result.summary && h('div', {className:'modal-section'},
+          h('div', {className:'modal-section-t'}, '판정 근거'),
+          h('div', {className:'summary-box'}, r.result.summary)
+        ),
+        // 사진 (상세 조회 시에는 전체 사진이 있으므로 표시)
+        r.photos && r.photos.length > 0 && h('div', {className:'modal-section'},
+          h('div', {className:'modal-section-t'}, '업로드 사진 (' + r.photos.length + '장)'),
+          h('div', {className:'photo-grid'},
+            r.photos.map(function(p, i){
+              return h('img', {key:i, src:p.url, alt:'p'+i, onClick:function(){window.open(p.url,'_blank');}});
+            })
+          )
+        ),
+        // 액션 버튼
+        h('div', {className:'modal-actions'},
+          h('button', {className:'btn-warn', onClick:function(){setShowChange(true);}}, '⚡ 등급 수정'),
+          h('button', {className:'btn-danger', onClick:del}, '🗑️ 삭제'),
+          h('button', {className:'btn-sk', onClick:props.onClose, style:{marginLeft:'auto'}}, '닫기')
+        )
+      )
+    )
+  );
+}
+
+// ── 대시보드 ──
+function Dashboard(props){
+  var s1 = useState([]); var list = s1[0], setList = s1[1];
+  var s2 = useState(true); var loading = s2[0], setLoading = s2[1];
+  var s3 = useState(''); var err = s3[0], setErr = s3[1];
+  var s4 = useState(''); var search = s4[0], setSearch = s4[1];
+  var s5 = useState(''); var filterGrade = s5[0], setFilterGrade = s5[1];
+  var s6 = useState(''); var filterMethod = s6[0], setFilterMethod = s6[1];
+  var s7 = useState(''); var filterStatus = s7[0], setFilterStatus = s7[1];
+  var s8 = useState(null); var selectedNumber = s8[0], setSelectedNumber = s8[1];
+  var s9 = useState(null); var selectedReceipt = s9[0], setSelectedReceipt = s9[1];
+  var sA = useState(false); var loadingDetail = sA[0], setLoadingDetail = sA[1];
+
+  function load(){
+    setLoading(true); setErr('');
+    fetch('/api/receipts', { headers:{'X-Admin-Token': props.token} })
+    .then(function(r){ return r.json().then(function(d){return {ok:r.ok, status:r.status, data:d};}); })
+    .then(function(res){
+      if(res.status === 401){ props.onLogout(); return; }
+      if(!res.ok) throw new Error(res.data.error || '조회 실패');
+      setList(res.data.receipts || []);
+    })
+    .catch(function(e){ setErr(e.message); })
+    .finally(function(){ setLoading(false); });
+  }
+
+  useEffect(function(){ load(); }, []);
+
+  function openDetail(number){
+    setSelectedNumber(number); setLoadingDetail(true);
+    fetch('/api/receipts/'+number, { headers:{'X-Admin-Token': props.token} })
+    .then(function(r){ return r.json().then(function(d){return {ok:r.ok, data:d};}); })
+    .then(function(res){
+      if(!res.ok) throw new Error(res.data.error || '조회 실패');
+      setSelectedReceipt(res.data.receipt);
+    })
+    .catch(function(e){ alert('조회 실패: '+e.message); setSelectedNumber(null); })
+    .finally(function(){ setLoadingDetail(false); });
+  }
+
+  function closeDetail(){ setSelectedNumber(null); setSelectedReceipt(null); }
+
+  // 필터링
+  var filtered = useMemo(function(){
+    return list.filter(function(r){
+      var grade = r.result && r.result.final_grade || '';
+      var model = r.result && r.result.device_info && r.result.device_info.model_name || '';
+      var name = r.authInfo && r.authInfo.name || '';
+      var phone = r.authInfo && r.authInfo.phone || '';
+      var status = r.reviewedGrade ? 'reviewed' : 'ai';
+
+      if(search){
+        var q = search.toLowerCase();
+        var matches = r.receiptNumber.toLowerCase().indexOf(q)>=0 ||
+                     name.toLowerCase().indexOf(q)>=0 ||
+                     phone.replace(/\D/g,'').indexOf(q.replace(/\D/g,''))>=0 ||
+                     model.toLowerCase().indexOf(q)>=0;
+        if(!matches) return false;
+      }
+      if(filterGrade && grade !== filterGrade) return false;
+      if(filterMethod && r.method !== filterMethod) return false;
+      if(filterStatus && status !== filterStatus) return false;
+      return true;
+    });
+  }, [list, search, filterGrade, filterMethod, filterStatus]);
+
+  // 통계
+  var stats = useMemo(function(){
+    var total = list.length;
+    var reviewed = list.filter(function(r){return !!r.reviewedGrade;}).length;
+    var totalPrice = 0;
+    var gradeCount = {};
+    list.forEach(function(r){
+      var g = r.result && r.result.final_grade;
+      if(g){
+        gradeCount[g] = (gradeCount[g] || 0) + 1;
+        var m = r.result.device_info && r.result.device_info.model_name;
+        var p = lookupPrice(m, g);
+        if(p) totalPrice += p;
+      }
+    });
+    return {total: total, reviewed: reviewed, totalPrice: totalPrice, gradeCount: gradeCount};
+  }, [list]);
+
+  // 엑셀 다운로드 (CSV, UTF-8 BOM)
+  function downloadCsv(){
+    var rows = [['접수번호','접수일시','고객명','연락처','통신사','모델','등급','예상매입가','촬영방식','상태','검수자','검수사유']];
+    filtered.forEach(function(r){
+      var grade = r.result && r.result.final_grade || '';
+      var model = r.result && r.result.device_info && r.result.device_info.model_name || '';
+      var price = lookupPrice(model, grade);
+      var name = r.authInfo && r.authInfo.name || '';
+      var phone = r.authInfo && r.authInfo.phone || '';
+      var carrier = r.authInfo && r.authInfo.carrier || '';
+      var status = r.reviewedGrade ? '검수완료' : 'AI판정';
+      rows.push([
+        r.receiptNumber, fmtDate(r.createdAt), name, phone, carrier, model, grade,
+        price ? price : '', r.method==='mri'?'MRI':'직접', status, r.reviewedBy||'', r.reviewNote||''
+      ]);
+    });
+    var csv = rows.map(function(row){
+      return row.map(function(cell){
+        var s = String(cell==null?'':cell);
+        if(s.indexOf(',')>=0 || s.indexOf('"')>=0 || s.indexOf('\n')>=0){
+          return '"' + s.replace(/"/g,'""') + '"';
+        }
+        return s;
+      }).join(',');
+    }).join('\n');
+    var bom = '\uFEFF';
+    var blob = new Blob([bom+csv], {type:'text/csv;charset=utf-8'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var d = new Date();
+    var stamp = String(d.getFullYear()).slice(2) + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+    a.href = url; a.download = '리본_접수내역_'+stamp+'.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  return h('div', null,
+    h('header', {className:'hd'},
+      h('div', {className:'hd-mark'}, 'R'),
+      h('div', {className:'hd-name'}, '리본 AI 판정기'),
+      h('span', {className:'hd-badge'}, 'ADMIN'),
+      h('div', {className:'hd-user'},
+        '👤 ' + props.userId,
+        h('button', {className:'hd-logout', onClick:props.onLogout}, '로그아웃')
+      )
+    ),
+    h('div', {className:'pg'},
+      h('div', {className:'pg-h'},
+        h('div', null,
+          h('div', {className:'pg-t'}, '접수 관리'),
+          h('div', {className:'pg-s'}, '실시간 접수 내역 및 검수 관리')
+        ),
+        h('div', {style:{display:'flex', gap:'8px'}},
+          h('button', {className:'btn-sk', onClick:load}, '🔄 새로고침'),
+          h('button', {className:'btn-blue', onClick:downloadCsv, disabled:filtered.length===0}, '📥 엑셀 다운로드 (CSV)')
+        )
+      ),
+      // 통계
+      h('div', {className:'stats'},
+        h('div', {className:'stat'},
+          h('div', {className:'stat-l'}, '총 접수'),
+          h('div', {className:'stat-v'}, stats.total),
+          h('div', {className:'stat-s'}, '건')
+        ),
+        h('div', {className:'stat'},
+          h('div', {className:'stat-l'}, '검수 완료'),
+          h('div', {className:'stat-v'}, stats.reviewed),
+          h('div', {className:'stat-s'}, '건 · '+(stats.total?Math.round(stats.reviewed/stats.total*100):0)+'%')
+        ),
+        h('div', {className:'stat'},
+          h('div', {className:'stat-l'}, '예상 매입가 합계'),
+          h('div', {className:'stat-v'}, (stats.totalPrice/10000).toFixed(0)),
+          h('div', {className:'stat-s'}, '만원')
+        ),
+        h('div', {className:'stat'},
+          h('div', {className:'stat-l'}, '필터 결과'),
+          h('div', {className:'stat-v'}, filtered.length),
+          h('div', {className:'stat-s'}, '건 표시')
+        )
+      ),
+      // 필터
+      h('div', {className:'filter-bar'},
+        h('input', {className:'search-in', placeholder:'🔍 접수번호 / 이름 / 연락처 / 모델 검색',
+          value:search, onChange:function(e){setSearch(e.target.value);}}),
+        h('select', {value:filterGrade, onChange:function(e){setFilterGrade(e.target.value);}},
+          h('option', {value:''}, '전체 등급'),
+          Object.keys(GC).map(function(g){return h('option', {key:g, value:g}, GC[g].emoji+' '+g);})
+        ),
+        h('select', {value:filterMethod, onChange:function(e){setFilterMethod(e.target.value);}},
+          h('option', {value:''}, '전체 촬영방식'),
+          h('option', {value:'mri'}, 'MRI'),
+          h('option', {value:'direct'}, '직접 촬영')
+        ),
+        h('select', {value:filterStatus, onChange:function(e){setFilterStatus(e.target.value);}},
+          h('option', {value:''}, '전체 상태'),
+          h('option', {value:'ai'}, 'AI 판정만'),
+          h('option', {value:'reviewed'}, '검수 완료')
+        )
+      ),
+      // 테이블
+      err && h('div', {className:'al al-err'}, '⚠️ '+err),
+      loading ? h('div', {className:'spinner'}) :
+      h('div', {className:'tbl-wrap'},
+        h('div', {className:'tbl-scroll'},
+          h('table', {className:'tbl'},
+            h('thead', null,
+              h('tr', null,
+                h('th', null, '접수번호'),
+                h('th', null, '접수일시'),
+                h('th', null, '사진'),
+                h('th', null, '고객명'),
+                h('th', null, '연락처'),
+                h('th', null, '모델'),
+                h('th', null, '등급'),
+                h('th', null, '예상 매입가'),
+                h('th', null, '촬영방식'),
+                h('th', null, '상태')
+              )
+            ),
+            h('tbody', null,
+              filtered.length === 0 ?
+                h('tr', null,
+                  h('td', {colSpan:10, className:'empty-row'},
+                    h('div', {className:'empty-icon'}, list.length===0 ? '📭' : '🔍'),
+                    h('div', {className:'empty-t'}, list.length===0 ? '접수 내역이 없습니다' : '검색 결과가 없습니다'),
+                    h('div', {className:'empty-s'}, list.length===0 ? '판정기에서 접수가 완료되면 여기에 표시됩니다' : '검색 조건을 변경해보세요')
+                  )
+                )
+              :
+              filtered.map(function(r){
+                var grade = r.result && r.result.final_grade || '';
+                var cfg = GC[grade] || {ko:'-', color:'#64748B', bg:'#F1F5F9', emoji:''};
+                var model = r.result && r.result.device_info && r.result.device_info.model_name || '-';
+                var price = lookupPrice(model, grade);
+                var thumb = r.photos && r.photos.length>0 ? r.photos[0].url : null;
+                var photoCount = r.photoCount || (r.photos && r.photos.length) || 0;
+                var name = r.authInfo && r.authInfo.name || '-';
+                var phone = r.authInfo && r.authInfo.phone || '-';
+                var isReviewed = !!r.reviewedGrade;
+                return h('tr', {key:r.receiptNumber, onClick:function(){openDetail(r.receiptNumber);}},
+                  h('td', null, h('span', {className:'tbl-num'}, r.receiptNumber)),
+                  h('td', {style:{fontSize:'12px', color:'#64748B'}}, fmtDate(r.createdAt)),
+                  h('td', null,
+                    thumb ?
+                      h('div', {style:{position:'relative', display:'inline-block'}},
+                        h('img', {className:'tbl-thumb', src:thumb, alt:'p'}),
+                        photoCount>1 && h('div', {style:{position:'absolute', bottom:'-4px', right:'-4px', background:'#0D1B2A', color:'#fff', fontSize:'9px', fontWeight:'800', padding:'1px 5px', borderRadius:'8px'}}, '+'+(photoCount-1))
+                      )
+                    : h('div', {className:'tbl-thumb-empty'}, '📷')
+                  ),
+                  h('td', {style:{fontWeight:'600'}}, name),
+                  h('td', {style:{fontSize:'12px', color:'#4A5568'}}, phone),
+                  h('td', {style:{fontSize:'12px'}}, model),
+                  h('td', null,
+                    h('span', {className:'gr-pill', style:{background:cfg.bg, color:cfg.color}},
+                      cfg.emoji + ' ' + (grade||'-')
+                    )
+                  ),
+                  h('td', {style:{fontWeight:'700', color:'#0D1B2A'}}, fmt(price)),
+                  h('td', null,
+                    h('span', {className:'method-pill ' + (r.method==='mri'?'mri':'')},
+                      r.method==='mri'?'MRI':'직접'
+                    )
+                  ),
+                  h('td', null,
+                    h('span', {className:'stat-pill ' + (isReviewed?'reviewed':'')},
+                      isReviewed ? '⚡ 검수완료' : 'AI 판정'
+                    )
+                  )
+                );
+              })
+            )
+          )
+        )
+      )
+    ),
+    selectedNumber && (loadingDetail ?
+      h('div', {className:'modal-bg'}, h('div', {className:'spinner'}))
+      : selectedReceipt && h(DetailModal, {
+          receipt: selectedReceipt,
+          token: props.token,
+          onClose: closeDetail,
+          onUpdated: function(){ closeDetail(); load(); },
+          onDeleted: function(){ closeDetail(); load(); }
+        })
+    )
+  );
+}
+
+// ── 앱 라우터 ──
+function App(){
+  var s = getSession();
+  var s1 = useState(s ? s.userId : null); var userId = s1[0], setUserId = s1[1];
+
+  function onLogin(uid){ setUserId(uid); }
+  function onLogout(){ clearSession(); setUserId(null); }
+
+  if(!userId) return h(Login, {onLogin: onLogin});
+
+  var session = getSession();
+  if(!session){ setUserId(null); return null; }
+
+  return h(Dashboard, {userId: session.userId, token: session.token, onLogout: onLogout});
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+
+</script>
+</body>
+</html>

@@ -2,12 +2,16 @@
   "version": 2,
   "rewrites": [
     { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/admin/", "destination": "/admin.html" }
+    { "source": "/admin/", "destination": "/admin.html" },
+    { "source": "/c/:number", "destination": "/customer.html" },
+    { "source": "/c/:number/", "destination": "/customer.html" }
   ],
   "functions": {
     "api/grade.js": { "maxDuration": 60 },
-    "api/receipts.js": { "maxDuration": 15 },
+    "api/receipts.js": { "maxDuration": 20 },
     "api/receipts/[number].js": { "maxDuration": 10 },
+    "api/customer/[number].js": { "maxDuration": 20 },
+    "api/send-sms.js": { "maxDuration": 15 },
     "api/login.js": { "maxDuration": 10 }
   }
 }

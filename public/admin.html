@@ -133,25 +133,16 @@ var GC = {
 };
 
 // 매입가
-var PRICES = {
-  'Galaxy S24':       {Excellent:680000,'Very Good':580000,Good:460000,Normal:340000,Bad:140000},
-  'Galaxy S24 Ultra': {Excellent:980000,'Very Good':840000,Good:680000,Normal:460000,Bad:180000},
-  'Galaxy S23':       {Excellent:520000,'Very Good':440000,Good:350000,Normal:240000,Bad:100000},
-  'Galaxy S23 Ultra': {Excellent:720000,'Very Good':620000,Good:500000,Normal:340000,Bad:140000},
-  'Galaxy A55':       {Excellent:320000,'Very Good':270000,Good:210000,Normal:140000,Bad:60000},
-  'iPhone 16':        {Excellent:920000,'Very Good':780000,Good:620000,Normal:420000,Bad:170000},
-  'iPhone 15 Pro Max':{Excellent:1100000,'Very Good':940000,Good:760000,Normal:520000,Bad:210000},
-  'iPhone 15 Pro':    {Excellent:980000,'Very Good':840000,Good:680000,Normal:460000,Bad:180000},
-  'iPhone 15':        {Excellent:780000,'Very Good':660000,Good:520000,Normal:360000,Bad:150000},
-  'iPhone 14':        {Excellent:620000,'Very Good':520000,Good:410000,Normal:280000,Bad:110000},
-  'iPhone 13':        {Excellent:480000,'Very Good':400000,Good:320000,Normal:220000,Bad:90000},
-};
-function lookupPrice(modelName, grade){
-  if(!modelName || !grade) return null;
-  var key = null;
-  Object.keys(PRICES).forEach(function(k){ if(modelName.indexOf(k) >= 0) key = k; });
-  if(!key) return null;
-  return PRICES[key][grade] || null;
+// v23: 단가는 접수 시점에 서버(_prices.js, 9월 1호)에서 확정되어 레코드에 저장된다.
+function lookupPrice(r){
+  if(!r) return null;
+  if(r.finalPrice != null) return r.finalPrice;
+  var res = r.result || {};
+  if(res.final_price != null) return res.final_price;
+  var pi = res.price_info;
+  var g = res.final_grade;
+  if(pi && pi.prices && g && pi.prices[g] != null) return pi.prices[g];
+  return null;
 }
 function fmt(n){ return n ? n.toLocaleString()+'원' : '-'; }
 function fmtDate(iso){
@@ -310,6 +301,24 @@ function DetailModal(props){
     });
   }
 
+  function sendToCustomer(){
+    if(!confirm(r.customerName + ' 고객님(' + (r.customerPhone||'') + ')에게\n판정결과와 거래확인 링크를 발송하시겠습니까?')) return;
+    fetch('/api/receipts', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({action:'send', receiptNumber: r.receiptNumber})
+    })
+    .then(function(res){ return res.json().then(function(d){return {ok:res.ok, data:d};}); })
+    .then(function(res){
+      if(!res.ok) throw new Error(res.data.error || '발송 실패');
+      var extra = (res.data.sms && res.data.sms.simulated)
+        ? '\n\n⚠️ Solapi 환경변수 미설정으로 실제 문자는 발송되지 않았습니다.' : '';
+      alert('발송 완료' + extra + '\n\n고객 확인 링크:\n' + (res.data.link||''));
+      props.onUpdated();
+    })
+    .catch(function(e){ alert('발송 실패: ' + e.message); });
+  }
+
   function del(){
     if(!confirm('접수번호 ' + r.receiptNumber + '을(를) 삭제하시겠습니까?\n\n삭제된 데이터는 복구할 수 없습니다.')) return;
     fetch('/api/receipts/' + r.receiptNumber, {
@@ -341,6 +350,62 @@ function DetailModal(props){
         h('button', {className:'modal-x', onClick:props.onClose}, '✕')
       ),
       h('div', {className:'modal-b'},
+        // v23: 신뢰도 / 라우팅
+        (function(){
+          var cd = r.confidenceDetail || (r.result && r.result.confidence_detail) || null;
+          if(!cd) return null;
+          var isPending = r.route === 'review' && !r.reviewedAt;
+          var isAuto = r.route === 'auto';
+          return h('div', {style:{background: isAuto?'#ECFDF5':'#FFF7ED', border:'1px solid '+(isAuto?'#A7F3D0':'#FED7AA'),
+              borderRadius:'12px', padding:'14px 16px', marginBottom:'14px'}},
+            h('div', {style:{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'7px'}},
+              h('span', {style:{fontWeight:'800', fontSize:'13px', color: isAuto?'#047857':'#C2410C'}},
+                isAuto ? '✅ AI 자동 확정' : (isPending ? '🔍 검수 대기' : '⚡ 검수 완료')),
+              h('span', {style:{fontFamily:'ui-monospace,monospace', fontWeight:'900', fontSize:'17px',
+                color: isAuto?'#047857':'#C2410C'}}, '신뢰도 ' + cd.score + '%')
+            ),
+            h('div', {style:{fontSize:'11px', color:'#64748B', marginBottom: (cd.deductions&&cd.deductions.length)?'9px':'0'}},
+              'AI 자기보고 ' + (cd.aiConfidence||0) + '% · 룰 감점 -' + (cd.totalPenalty||0) + ' · 기준 ' + (cd.threshold||85) + '%'),
+            cd.deductions && cd.deductions.length>0 && h('div',
+              {style:{borderTop:'1px dashed '+(isAuto?'#A7F3D0':'#FED7AA'), paddingTop:'9px'}},
+              cd.deductions.map(function(d, i){
+                return h('div', {key:i, style:{fontSize:'12px', color:'#475569', padding:'3px 0'}},
+                  h('span', {style:{fontFamily:'ui-monospace,monospace', fontWeight:'800', color:'#DC2626',
+                    marginRight:'8px', display:'inline-block', minWidth:'32px'}}, '-'+d.penalty),
+                  d.label);
+              })
+            ),
+            isPending && h('div', {style:{marginTop:'11px', fontSize:'12px', color:'#7C2D12', fontWeight:'600'}},
+              '⚠️ 등급을 확인·확정한 뒤 아래 [고객에게 발송] 버튼을 눌러주세요.')
+          );
+        })(),
+
+        // v23: 고객 정보 + 진행 상태
+        h('div', {style:{background:'#F8FAFC', borderRadius:'10px', padding:'12px 14px', marginBottom:'14px', fontSize:'12px'}},
+          h('div', {style:{padding:'2px 0'}}, h('strong', null, '고객'), ' : ', r.customerName || '-',
+            '  ·  ', r.customerPhone || '-'),
+          h('div', {style:{padding:'2px 0', color:'#64748B'}},
+            '발송 ', r.sentAt ? fmtDate(r.sentAt) : '-',
+            '  ·  동의 ', r.agreedAt ? fmtDate(r.agreedAt) : '-',
+            '  ·  인증 ', r.verifiedAt ? fmtDate(r.verifiedAt) : '-',
+            '  ·  입금 ', r.paidAt ? fmtDate(r.paidAt) : '-'),
+          r.bankName && h('div', {style:{padding:'2px 0', color:'#64748B'}},
+            '입금계좌 : ', r.bankName, ' ', (r.accountNo||'').slice(0,3)+'****'+(r.accountNo||'').slice(-4),
+            ' (', r.holderName||'', ')')
+        ),
+
+        // 발송 버튼
+        !r.sentAt && h('button', {
+          style:{width:'100%', background:'#00C473', color:'#fff', border:'none', borderRadius:'10px',
+                 padding:'13px 0', fontSize:'14px', fontWeight:'800', cursor:'pointer',
+                 fontFamily:'inherit', marginBottom:'14px'},
+          onClick: sendToCustomer
+        }, '📨 고객에게 판정결과 발송'),
+
+        r.sentAt && h('div', {style:{background:'#ECFDF5', border:'1px solid #A7F3D0', borderRadius:'10px',
+          padding:'11px 13px', fontSize:'12px', color:'#065F46', marginBottom:'14px', fontWeight:'600'}},
+          '📨 ', fmtDate(r.sentAt), ' 고객에게 발송 완료'),
+
         // 검수 이력 표시
         isReviewed && h('div', {className:'review-info'},
           '⚡ ',h('strong',null,'검수 수정 이력'),h('br'),
@@ -364,11 +429,12 @@ function DetailModal(props){
           h('div', {className:'modal-section-t'}, '고객 정보'),
           h('div', {className:'info-grid'},
             h('div', {className:'info-item'},
-              h('div', {className:'info-l'}, '이름'), h('div', {className:'info-v'}, r.authInfo && r.authInfo.name || '-')),
+              h('div', {className:'info-l'}, '이름'), h('div', {className:'info-v'}, r.customerName || '-')),
             h('div', {className:'info-item'},
-              h('div', {className:'info-l'}, '연락처'), h('div', {className:'info-v'}, r.authInfo && r.authInfo.phone || '-')),
+              h('div', {className:'info-l'}, '연락처'), h('div', {className:'info-v'}, r.customerPhone || '-')),
             h('div', {className:'info-item'},
-              h('div', {className:'info-l'}, '통신사'), h('div', {className:'info-v'}, r.authInfo && r.authInfo.carrier || '-')),
+              h('div', {className:'info-l'}, '본인인증'), h('div', {className:'info-v'},
+                r.verifiedAt ? '완료 (' + fmtDate(r.verifiedAt) + ')' : '미완료 — 고객 직접 진행')),
             h('div', {className:'info-item'},
               h('div', {className:'info-l'}, '촬영 방식'), h('div', {className:'info-v'}, r.method==='mri'?'MRI 촬영':'직접 촬영'))
           )
@@ -461,9 +527,11 @@ function Dashboard(props){
     return list.filter(function(r){
       var grade = r.result && r.result.final_grade || '';
       var model = r.result && r.result.device_info && r.result.device_info.model_name || '';
-      var name = r.authInfo && r.authInfo.name || '';
-      var phone = r.authInfo && r.authInfo.phone || '';
-      var status = r.reviewedGrade ? 'reviewed' : 'ai';
+      var name = r.customerName || '';
+      var phone = r.customerPhone || '';
+      var status = r.route === 'review' && !r.reviewedAt ? 'pending'
+                 : r.reviewedGrade ? 'reviewed'
+                 : r.sentAt ? 'sent' : 'ai';
 
       if(search){
         var q = search.toLowerCase();
@@ -484,33 +552,38 @@ function Dashboard(props){
   var stats = useMemo(function(){
     var total = list.length;
     var reviewed = list.filter(function(r){return !!r.reviewedGrade;}).length;
+    var pending = list.filter(function(r){return r.route==='review' && !r.reviewedAt;}).length;
+    var sent = list.filter(function(r){return !!r.sentAt;}).length;
     var totalPrice = 0;
     var gradeCount = {};
     list.forEach(function(r){
       var g = r.result && r.result.final_grade;
       if(g){
         gradeCount[g] = (gradeCount[g] || 0) + 1;
-        var m = r.result.device_info && r.result.device_info.model_name;
-        var p = lookupPrice(m, g);
+        var p = lookupPrice(r);
         if(p) totalPrice += p;
       }
     });
-    return {total: total, reviewed: reviewed, totalPrice: totalPrice, gradeCount: gradeCount};
+    return {total: total, reviewed: reviewed, pending: pending, sent: sent,
+            totalPrice: totalPrice, gradeCount: gradeCount};
   }, [list]);
 
   // 엑셀 다운로드 (CSV, UTF-8 BOM)
   function downloadCsv(){
-    var rows = [['접수번호','접수일시','고객명','연락처','통신사','모델','등급','예상매입가','촬영방식','상태','검수자','검수사유']];
+    var rows = [['접수번호','접수일시','고객명','연락처','모델','등급','신뢰도','매입가','촬영방식','상태','검수자','검수사유']];
     filtered.forEach(function(r){
       var grade = r.result && r.result.final_grade || '';
       var model = r.result && r.result.device_info && r.result.device_info.model_name || '';
-      var price = lookupPrice(model, grade);
-      var name = r.authInfo && r.authInfo.name || '';
-      var phone = r.authInfo && r.authInfo.phone || '';
-      var carrier = r.authInfo && r.authInfo.carrier || '';
-      var status = r.reviewedGrade ? '검수완료' : 'AI판정';
+      var price = lookupPrice(r);
+      var name = r.customerName || '';
+      var phone = r.customerPhone || '';
+      var conf = r.confidenceScore != null ? r.confidenceScore : '';
+      var status = (r.route==='review' && !r.reviewedAt) ? '검수대기'
+                 : r.paidAt ? '입금완료'
+                 : r.sentAt ? '발송완료'
+                 : r.reviewedGrade ? '검수완료' : 'AI확정';
       rows.push([
-        r.receiptNumber, fmtDate(r.createdAt), name, phone, carrier, model, grade,
+        r.receiptNumber, fmtDate(r.createdAt), name, phone, model, grade, conf,
         price ? price : '', r.method==='mri'?'MRI':'직접', status, r.reviewedBy||'', r.reviewNote||''
       ]);
     });
@@ -562,10 +635,17 @@ function Dashboard(props){
           h('div', {className:'stat-v'}, stats.total),
           h('div', {className:'stat-s'}, '건')
         ),
+        h('div', {className:'stat', style: stats.pending>0 ? {background:'#FFF7ED', borderColor:'#FED7AA'} : {},
+            onClick:function(){setFilterStatus(stats.pending>0 && filterStatus!=='pending' ? 'pending' : '');},
+            title:'클릭하면 검수 대기 건만 봅니다'},
+          h('div', {className:'stat-l', style: stats.pending>0 ? {color:'#C2410C'} : {}}, '🔍 검수 대기'),
+          h('div', {className:'stat-v', style: stats.pending>0 ? {color:'#C2410C'} : {}}, stats.pending),
+          h('div', {className:'stat-s'}, '건 · 신뢰도 85% 미만')
+        ),
         h('div', {className:'stat'},
-          h('div', {className:'stat-l'}, '검수 완료'),
-          h('div', {className:'stat-v'}, stats.reviewed),
-          h('div', {className:'stat-s'}, '건 · '+(stats.total?Math.round(stats.reviewed/stats.total*100):0)+'%')
+          h('div', {className:'stat-l'}, '고객 발송'),
+          h('div', {className:'stat-v'}, stats.sent),
+          h('div', {className:'stat-s'}, '건 · '+(stats.total?Math.round(stats.sent/stats.total*100):0)+'%')
         ),
         h('div', {className:'stat'},
           h('div', {className:'stat-l'}, '예상 매입가 합계'),
@@ -593,8 +673,10 @@ function Dashboard(props){
         ),
         h('select', {value:filterStatus, onChange:function(e){setFilterStatus(e.target.value);}},
           h('option', {value:''}, '전체 상태'),
-          h('option', {value:'ai'}, 'AI 판정만'),
-          h('option', {value:'reviewed'}, '검수 완료')
+          h('option', {value:'pending'}, '🔍 검수 대기'),
+          h('option', {value:'ai'}, '✅ AI 확정'),
+          h('option', {value:'reviewed'}, '⚡ 검수 완료'),
+          h('option', {value:'sent'}, '📨 발송 완료')
         )
       ),
       // 테이블
@@ -612,7 +694,8 @@ function Dashboard(props){
                 h('th', null, '연락처'),
                 h('th', null, '모델'),
                 h('th', null, '등급'),
-                h('th', null, '예상 매입가'),
+                h('th', null, '신뢰도'),
+                h('th', null, '매입가'),
                 h('th', null, '촬영방식'),
                 h('th', null, '상태')
               )
@@ -620,7 +703,7 @@ function Dashboard(props){
             h('tbody', null,
               filtered.length === 0 ?
                 h('tr', null,
-                  h('td', {colSpan:10, className:'empty-row'},
+                  h('td', {colSpan:11, className:'empty-row'},
                     h('div', {className:'empty-icon'}, list.length===0 ? '📭' : '🔍'),
                     h('div', {className:'empty-t'}, list.length===0 ? '접수 내역이 없습니다' : '검색 결과가 없습니다'),
                     h('div', {className:'empty-s'}, list.length===0 ? '판정기에서 접수가 완료되면 여기에 표시됩니다' : '검색 조건을 변경해보세요')
@@ -631,13 +714,20 @@ function Dashboard(props){
                 var grade = r.result && r.result.final_grade || '';
                 var cfg = GC[grade] || {ko:'-', color:'#64748B', bg:'#F1F5F9', emoji:''};
                 var model = r.result && r.result.device_info && r.result.device_info.model_name || '-';
-                var price = lookupPrice(model, grade);
+                var price = lookupPrice(r);
                 var thumb = r.photos && r.photos.length>0 ? r.photos[0].url : null;
                 var photoCount = r.photoCount || (r.photos && r.photos.length) || 0;
-                var name = r.authInfo && r.authInfo.name || '-';
-                var phone = r.authInfo && r.authInfo.phone || '-';
+                var name = r.customerName || '-';
+                var phone = r.customerPhone || '-';
                 var isReviewed = !!r.reviewedGrade;
-                return h('tr', {key:r.receiptNumber, onClick:function(){openDetail(r.receiptNumber);}},
+                var conf = r.confidenceScore;
+                var isPending = r.route === 'review' && !r.reviewedAt;
+                var statusLabel = isPending ? '🔍 검수대기'
+                                : r.paidAt ? '💰 입금완료'
+                                : r.sentAt ? '📨 발송완료'
+                                : isReviewed ? '⚡ 검수완료' : '✅ AI확정';
+                return h('tr', {key:r.receiptNumber, onClick:function(){openDetail(r.receiptNumber);},
+                    style: isPending ? {background:'#FFFBF5'} : {}},
                   h('td', null, h('span', {className:'tbl-num'}, r.receiptNumber)),
                   h('td', {style:{fontSize:'12px', color:'#64748B'}}, fmtDate(r.createdAt)),
                   h('td', null,
@@ -656,6 +746,12 @@ function Dashboard(props){
                       cfg.emoji + ' ' + (grade||'-')
                     )
                   ),
+                  h('td', null,
+                    conf != null
+                      ? h('span', {style:{fontFamily:'ui-monospace,monospace', fontWeight:'800', fontSize:'12px',
+                          color: conf>=85 ? '#047857' : conf>=60 ? '#D97706' : '#DC2626'}}, conf+'%')
+                      : h('span', {style:{color:'#CBD5E1'}}, '-')
+                  ),
                   h('td', {style:{fontWeight:'700', color:'#0D1B2A'}}, fmt(price)),
                   h('td', null,
                     h('span', {className:'method-pill ' + (r.method==='mri'?'mri':'')},
@@ -663,8 +759,9 @@ function Dashboard(props){
                     )
                   ),
                   h('td', null,
-                    h('span', {className:'stat-pill ' + (isReviewed?'reviewed':'')},
-                      isReviewed ? '⚡ 검수완료' : 'AI 판정'
+                    h('span', {className:'stat-pill ' + (isReviewed?'reviewed':''),
+                      style: isPending ? {background:'#FFF7ED', color:'#C2410C', border:'1px solid #FED7AA'} : {}},
+                      statusLabel
                     )
                   )
                 );

@@ -1,3 +1,6 @@
+import { lookupPrice } from './_prices.js';
+import { evaluateConfidence } from './_confidence.js';
+
 export default async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -51,6 +54,33 @@ export default async function handler(req, res) {
     }
 
     const result = JSON.parse(raw.substring(start, end + 1));
+
+    // ── 단가 조회 (9월 1호 단가표) ──
+    const di = result.device_info || {};
+    const priceInfo = lookupPrice(
+      di.model_number,
+      di.storage,
+      di.model_name,
+      null
+    );
+    result.price_info = priceInfo;
+
+    // ── 신뢰도 산출 + 라우팅 결정 ──
+    result.confidence_detail = evaluateConfidence(result, {
+      photoCount: images.length,
+      priceMatchType: priceInfo ? priceInfo.matchType : null
+    });
+    // 최종 신뢰도를 confidence 에도 반영 (기존 UI 호환)
+    result.confidence = result.confidence_detail.score / 100;
+    result.route = result.confidence_detail.route;   // 'auto' | 'review'
+
+    // ── 확정 매입가 (판정등급에 해당하는 금액) ──
+    if(priceInfo && priceInfo.prices[result.final_grade] != null){
+      result.final_price = priceInfo.prices[result.final_grade];
+    } else {
+      result.final_price = null;
+    }
+
     return res.status(200).json(result);
 
   } catch (e) {

@@ -34,38 +34,114 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
 
   try {
-    // POST — 접수 저장 (사용자 판정기에서 호출)
+    // POST — 접수 저장 / 고객 발송
     if(req.method === 'POST'){
-      const { receiptNumber, result, photos, authInfo, method } = req.body || {};
-      if(!receiptNumber || !result || !authInfo){
+      const body = req.body || {};
+
+      // ── action: 'send' — 고객에게 판정결과 문자 발송 ──
+      if(body.action === 'send'){
+        const { receiptNumber } = body;
+        if(!receiptNumber) return res.status(400).json({ error: '접수번호가 필요합니다' });
+
+        const rec = await kv.get(`receipt:${receiptNumber}`);
+        if(!rec) return res.status(404).json({ error: '접수를 찾을 수 없습니다' });
+        if(!rec.customerPhone) return res.status(400).json({ error: '고객 연락처가 없습니다' });
+
+        // 검수 대기 건은 관리자 확정 전에는 발송 불가
+        if(rec.route === 'review' && !rec.reviewedAt){
+          return res.status(400).json({
+            error: '신뢰도 기준 미달로 관리자 검수가 필요한 건입니다. 검수 확정 후 발송할 수 있습니다.'
+          });
+        }
+
+        const r = rec.result || {};
+        const proto = (req.headers['x-forwarded-proto'] || 'https');
+        const base = process.env.PUBLIC_BASE_URL || `${proto}://${req.headers['host']}`;
+
+        const smsRes = await fetch(`${base}/api/send-sms`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'result',
+            to: rec.customerPhone,
+            data: {
+              receiptNumber,
+              customerName: rec.customerName,
+              modelName: (r.device_info && r.device_info.model_name) || null,
+              grade: r.final_grade,
+              price: rec.finalPrice != null ? rec.finalPrice : r.final_price
+            }
+          })
+        });
+        const smsOut = await smsRes.json();
+
+        if(!smsRes.ok){
+          return res.status(502).json({ error: smsOut.error || '문자 발송 실패', detail: smsOut });
+        }
+
+        rec.sentAt = new Date().toISOString();
+        rec.status = 'sent';
+        await kv.set(`receipt:${receiptNumber}`, rec, { ex: 60 * 60 * 24 * 90 });
+
+        return res.status(200).json({
+          ok: true,
+          receiptNumber,
+          sentAt: rec.sentAt,
+          sms: smsOut,
+          link: `${base}/c/${receiptNumber}`
+        });
+      }
+
+      // ── 기본: 접수 저장 ──
+      const { receiptNumber, result, photos, customerName, customerPhone, method } = body;
+      if(!receiptNumber || !result){
         return res.status(400).json({ error: '필수 데이터 누락' });
       }
+
+      const conf = result.confidence_detail || null;
+      const route = result.route || (conf ? conf.route : 'review');
 
       const record = {
         receiptNumber,
         result,
         photos: photos || [],
-        authInfo,
+        customerName: customerName || null,
+        customerPhone: String(customerPhone || '').replace(/[^0-9]/g, '') || null,
         method,
         createdAt: new Date().toISOString(),
-        status: 'completed',
+
+        // 신뢰도 라우팅
+        route,                                        // 'auto' | 'review'
+        confidenceScore: conf ? conf.score : null,
+        confidenceDetail: conf,
+
+        // 상태: review_pending(검수대기) → confirmed(확정) → sent(발송) →
+        //       agreed(동의) → verified(인증) → paying → paid(입금완료)
+        status: route === 'auto' ? 'confirmed' : 'review_pending',
+
+        finalPrice: result.final_price != null ? result.final_price : null,
         originalGrade: result.final_grade,   // AI 원본 등급 보존
-        reviewedGrade: null,                  // 검수자 수정 등급
-        reviewNote: null,                     // 검수 사유
+        reviewedGrade: null,
+        reviewNote: null,
         reviewedAt: null,
-        reviewedBy: null
+        reviewedBy: null,
+        sentAt: null
       };
 
-      // 개별 저장
       await kv.set(`receipt:${receiptNumber}`, record, { ex: 60 * 60 * 24 * 90 }); // 90일 보관
 
-      // 인덱스 리스트에 추가 (최신순 정렬용)
       await kv.zadd('receipts:index', {
         score: Date.now(),
         member: receiptNumber
       });
 
-      return res.status(200).json({ ok: true, receiptNumber });
+      return res.status(200).json({
+        ok: true,
+        receiptNumber,
+        route,
+        confidenceScore: record.confidenceScore,
+        status: record.status
+      });
     }
 
     // GET — 접수 목록 조회 (관리자 페이지에서만)

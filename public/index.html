@@ -207,20 +207,7 @@ var GRADE_DESC = {
   }
 };
 
-// ── 매입가 ──
-var PRICES = {
-  'Galaxy S24':       {Excellent:680000,'Very Good':580000,Good:460000,Normal:340000,Bad:140000},
-  'Galaxy S24 Ultra': {Excellent:980000,'Very Good':840000,Good:680000,Normal:460000,Bad:180000},
-  'Galaxy S23':       {Excellent:520000,'Very Good':440000,Good:350000,Normal:240000,Bad:100000},
-  'Galaxy S23 Ultra': {Excellent:720000,'Very Good':620000,Good:500000,Normal:340000,Bad:140000},
-  'Galaxy A55':       {Excellent:320000,'Very Good':270000,Good:210000,Normal:140000,Bad:60000},
-  'iPhone 16':        {Excellent:920000,'Very Good':780000,Good:620000,Normal:420000,Bad:170000},
-  'iPhone 15 Pro Max':{Excellent:1100000,'Very Good':940000,Good:760000,Normal:520000,Bad:210000},
-  'iPhone 15 Pro':    {Excellent:980000,'Very Good':840000,Good:680000,Normal:460000,Bad:180000},
-  'iPhone 15':        {Excellent:780000,'Very Good':660000,Good:520000,Normal:360000,Bad:150000},
-  'iPhone 14':        {Excellent:620000,'Very Good':520000,Good:410000,Normal:280000,Bad:110000},
-  'iPhone 13':        {Excellent:480000,'Very Good':400000,Good:320000,Normal:220000,Bad:90000},
-};
+// ── 매입가: v23부터 서버(api/_prices.js, 9월 1호 단가표)에서 조회 ──
 
 function fmt(n){ return n ? n.toLocaleString()+'원' : '문의'; }
 
@@ -260,14 +247,14 @@ function resizeImage(file, maxSize, quality){
 
 var CARRIERS = ['SKT','KT','LGU+','SKT 알뜰폰','KT 알뜰폰','LGU+ 알뜰폰','기타'];
 // v20: 사용자 눈에 보이는 스텝은 3단계로 통합
-// 내부 step 0=Landing, 1=Method, 2=Upload, 3=Auth, 4=Result
-// 표시용 스텝: 0=사진촬영(Method+Upload 합침), 1=본인인증, 2=접수완료
-var STEPS = ['사진 촬영','본인 인증','접수완료·결과확인'];
-// 내부 step → 표시 step 매핑
+// v23: 접수 단계에서 본인인증 제거 — 본인인증은 고객이 문자 링크에서 직접 진행
+// 내부 step 0=Landing, 1=CustomerInfo, 2=Method, 3=Upload, 4=Result
+// 표시용 스텝: 0=고객 정보, 1=사진 촬영, 2=판정결과·발송
+var STEPS = ['고객 정보','사진 촬영','판정결과·발송'];
 function stepDisplay(internalStep){
-  if(internalStep===1 || internalStep===2) return 0; // Method, Upload = "사진 촬영"
-  if(internalStep===3) return 1; // Auth = "본인 인증"
-  if(internalStep===4) return 2; // Result = "접수완료·결과확인"
+  if(internalStep===1) return 0;             // CustomerInfo
+  if(internalStep===2 || internalStep===3) return 1; // Method, Upload
+  if(internalStep===4) return 2;             // Result
   return -1; // Landing은 스텝바 안보임
 }
 var AREA_LABELS = {front:'전면(액정)',back:'후면',bezel_side:'베젤/측면',camera:'카메라'};
@@ -283,27 +270,6 @@ function genReceiptNumber(){
   return 'SMRI-'+yy+mm+dd+'-'+rand;
 }
 
-// 저장된 접수건 로드/저장 (localStorage)
-var PENDING_KEY = 'ribbon_pending_receipts';
-function loadPending(){
-  try { return JSON.parse(localStorage.getItem(PENDING_KEY)||'[]'); }
-  catch(e){ return []; }
-}
-function savePending(list){
-  try { localStorage.setItem(PENDING_KEY, JSON.stringify(list)); }
-  catch(e){ console.error(e); }
-}
-function addPending(item){
-  var list = loadPending();
-  list.unshift(item);
-  savePending(list);
-}
-function removePending(receiptNumber){
-  var list = loadPending().filter(function(x){return x.receiptNumber!==receiptNumber;});
-  savePending(list);
-}
-function getPendingCount(){ return loadPending().filter(function(x){return x.status==='pending';}).length; }
-
 var h = React.createElement;
 var useState = React.useState;
 var useRef = React.useRef;
@@ -311,21 +277,10 @@ var useEffect = React.useEffect;
 
 // ── 헤더 ──
 function Header(props) {
-  var s = useState(getPendingCount());
-  var pendingCount = s[0], setPendingCount = s[1];
-  useEffect(function(){
-    var t = setInterval(function(){setPendingCount(getPendingCount());}, 1000);
-    return function(){clearInterval(t);};
-  }, []);
+  // v23: 본인인증이 접수 단계에서 빠지면서 '미완료 접수함'도 불필요해짐
   return h('header', {className:'hd'},
     h('div', {className:'hd-mark',onClick:props.onGoHome,style:{cursor:'pointer'}}, 'R'),
-    h('div', {className:'hd-name',onClick:props.onGoHome,style:{cursor:'pointer'}}, h('span',null,'리본'), ' AI 판정기'),
-    h('div', {className:'hd-nav'},
-      h('button', {className:'hd-btn',onClick:props.onGoPending},
-        '📋 미완료 접수',
-        pendingCount>0 && h('span',{className:'bcnt'},pendingCount)
-      )
-    )
+    h('div', {className:'hd-name',onClick:props.onGoHome,style:{cursor:'pointer'}}, h('span',null,'리본'), ' AI 판정기')
   );
 }
 
@@ -419,12 +374,12 @@ function Landing(props) {
 function Method(props) {
   var s=useState(null);var sel=s[0],setSel=s[1];
   return h('div',{className:'pg',style:{paddingBottom:'90px'}},
-    // 본인인증 사전 연락 안내 (변경 3번)
+    // v23: 본인인증은 고객이 문자 링크에서 직접 진행
     h('div',{className:'notice'},
-      h('span',{className:'notice-icon'},'⚠️'),
-      h('strong',null,'본인인증 안내'),h('br'),
-      '사진 업로드 후 ',h('strong',null,'단말기 소유자 본인의 통신사·연락처로 본인인증'),'이 필요합니다.',h('br'),
-      '접수 진행 전 반드시 ',h('strong',null,'단말기 소유자와 사전 연락'),'해 주세요. 인증이 지연될 경우 임시저장 후 나중에 진행할 수 있습니다.'
+      h('span',{className:'notice-icon'},'ℹ️'),
+      h('strong',null,'본인인증은 고객이 직접 진행합니다'),h('br'),
+      '접수 단계에서는 본인인증이 필요하지 않습니다. 판정 결과를 문자로 받은 고객이 ',
+      h('strong',null,'링크에서 직접 본인인증과 계좌입력'),'을 진행합니다.'
     ),
     h('div',{className:'card'},
       h('div',{className:'card-t'},'촬영 방식 선택'),
@@ -543,158 +498,61 @@ function Upload(props) {
   );
 }
 
-// ── 4. 본인인증 (변경 3번: 임시저장 기능 추가) ──
-function Auth(props) {
-  var s1=useState(props.savedInfo?props.savedInfo.name:'');var name=s1[0],setName=s1[1];
-  var s2=useState(props.savedInfo?props.savedInfo.carrier:'');var carrier=s2[0],setCarrier=s2[1];
-  var s3=useState(props.savedInfo?props.savedInfo.phone:'');var phone=s3[0],setPhone=s3[1];
-  var s4=useState('');var err=s4[0],setErr=s4[1];
-  var s5=useState(false);var showSaveConfirm=s5[0],setShowSaveConfirm=s5[1];
+// ── 4. 고객 정보 입력 (v23 신규 — 본인인증 대체) ──
+// 접수 직원이 고객 성함과 연락 가능한 번호만 입력한다.
+// 본인인증은 이 단계에서 하지 않고, 판정 후 고객이 문자 링크에서 직접 진행한다.
+function CustomerInfo(props) {
+  var s1=useState(props.saved?props.saved.name:'');   var name=s1[0],setName=s1[1];
+  var s2=useState(props.saved?props.saved.phone:'');  var phone=s2[0],setPhone=s2[1];
+  var s3=useState('');                                var err=s3[0],setErr=s3[1];
 
-  var valid=name.trim()&&carrier&&phone.replace(/\D/g,'').length>=10;
+  // 010-0000-0000 자동 하이픈
+  function formatPhone(v){
+    var d = String(v).replace(/\D/g,'').slice(0,11);
+    if(d.length < 4) return d;
+    if(d.length < 8) return d.slice(0,3)+'-'+d.slice(3);
+    if(d.length < 11) return d.slice(0,3)+'-'+d.slice(3,7)+'-'+d.slice(7);
+    return d.slice(0,3)+'-'+d.slice(3,7)+'-'+d.slice(7);
+  }
+
+  var digits = phone.replace(/\D/g,'');
+  var valid = name.trim().length >= 2 && digits.length >= 10;
 
   function submit(){
-    if(!valid){setErr('이름, 통신사, 연락처를 모두 입력해주세요.');return;}
-    props.onDone({name:name.trim(),carrier:carrier,phone:phone.trim()});
-  }
-
-  function saveForLater(){
-    // 사진, 촬영방식, 접수번호, 판정결과 저장
-    var receiptNumber = props.receiptNumber || genReceiptNumber();
-    var item = {
-      receiptNumber: receiptNumber,
-      photos: props.photos.map(function(p){return {url:p.url,b64:p.b64,mediaType:p.file.type};}),
-      method: props.method,
-      result: props.result,
-      status: 'pending',
-      savedAt: new Date().toISOString(),
-      authInfo: valid ? {name:name.trim(),carrier:carrier,phone:phone.trim()} : null
-    };
-    // 기존에 같은 번호가 있으면 덮어쓰기
-    var list = loadPending().filter(function(x){return x.receiptNumber!==receiptNumber;});
-    list.unshift(item);
-    savePending(list);
-    setShowSaveConfirm(true);
-  }
-
-  if(showSaveConfirm){
-    var receiptNumber = props.receiptNumber || (loadPending()[0] && loadPending()[0].receiptNumber);
-    return h('div',{className:'pg',style:{paddingBottom:'90px'}},
-      h('div',{className:'card',style:{textAlign:'center'}},
-        h('div',{style:{fontSize:'48px',marginBottom:'12px'}},'💾'),
-        h('div',{className:'card-t',style:{marginBottom:'8px'}},'임시저장 완료'),
-        h('div',{className:'card-s',style:{marginBottom:'16px'}},
-          '단말기 소유자와 연락이 닿으면',h('br'),'미완료 접수함에서 본인인증을 진행해주세요.'
-        ),
-        h('div',{style:{background:'#F1F5F9',borderRadius:'10px',padding:'14px',marginBottom:'16px'}},
-          h('div',{style:{fontSize:'11px',color:'#64748B',fontWeight:'700',marginBottom:'5px'}},'접수번호'),
-          h('div',{style:{fontFamily:'monospace',fontSize:'15px',fontWeight:'800',color:'#0D1B2A'}},receiptNumber)
-        )
-      ),
-      h('div',{className:'bb'},
-        h('button',{className:'btn-sk',onClick:props.onGoHome},'홈으로'),
-        h('button',{className:'btn-p',onClick:props.onGoPending},'📋 미완료 접수 확인 →')
-      )
-    );
+    if(name.trim().length < 2){ setErr('고객 성함을 정확히 입력해주세요.'); return; }
+    if(digits.length < 10){ setErr('연락 가능한 휴대폰 번호를 정확히 입력해주세요.'); return; }
+    setErr('');
+    props.onDone({ name: name.trim(), phone: digits });
   }
 
   return h('div',{className:'pg',style:{paddingBottom:'90px'}},
-    h('div',{className:'al-lock'},'🔒 ',h('strong',null,'판정 결과 확인을 위한 본인 인증'),h('br'),'단말기 소유자 본인의 정보로 인증해주세요. 지금 연락이 어려우면 아래 ',h('strong',null,'"임시저장"'),' 후 나중에 이어서 진행할 수 있습니다.'),
+    h('div',{className:'notice'},
+      h('span',{className:'notice-icon'},'📩'),
+      h('strong',null,'판정 결과를 받으실 연락처'),h('br'),
+      'AI 판정이 끝나면 이 번호로 ',h('strong',null,'판정결과와 거래확인 링크'),'가 발송됩니다.',h('br'),
+      '고객이 직접 링크에서 본인인증 후 매입대금을 받게 되므로, ',
+      h('strong',null,'반드시 단말기 소유자 본인의 번호'),'를 입력해주세요.'
+    ),
     h('div',{className:'card'},
-      h('div',{className:'card-t'},'본인 인증'),
-      h('div',{className:'card-s'},'이름, 통신사, 연락처를 입력해주세요.'),
-      h('div',{className:'frow'},h('label',{className:'flabel'},'이름'),
-        h('input',{className:'finput',placeholder:'홍길동',value:name,onChange:function(e){setName(e.target.value);}})),
-      h('div',{className:'frow'},h('label',{className:'flabel'},'통신사'),
-        h('select',{className:'fselect',value:carrier,onChange:function(e){setCarrier(e.target.value);}},
-          h('option',{value:''},'통신사 선택'),
-          CARRIERS.map(function(c){return h('option',{key:c,value:c},c);})
-        )),
-      h('div',{className:'frow'},h('label',{className:'flabel'},'연락처'),
-        h('input',{className:'finput',placeholder:'010-0000-0000',value:phone,inputMode:'tel',onChange:function(e){setPhone(e.target.value);}})),
-      err&&h('div',{className:'al al-err'},'⚠️ '+err)
+      h('div',{className:'card-t'},'고객 정보 입력'),
+      h('div',{className:'card-s'},'성함과 연락 가능한 번호만 입력하면 됩니다.'),
+      h('div',{className:'frow'},
+        h('label',{className:'flabel'},'고객 성함'),
+        h('input',{className:'finput',placeholder:'홍길동',value:name,
+          onChange:function(e){setName(e.target.value);setErr('');}})
+      ),
+      h('div',{className:'frow'},
+        h('label',{className:'flabel'},'연락처 (연락 가능한 번호)'),
+        h('input',{className:'finput',placeholder:'010-0000-0000',value:phone,inputMode:'tel',
+          onChange:function(e){setPhone(formatPhone(e.target.value));setErr('');}})
+      ),
+      err&&h('div',{className:'al al-err'},'⚠️ '+err),
+      h('div',{className:'hint',style:{marginTop:'10px'}},
+        '💡 본인인증은 접수 단계에서 진행하지 않습니다. 고객이 문자로 받은 링크에서 직접 인증합니다.'
+      )
     ),
     h('div',{className:'bb'},
-      h('button',{className:'btn-warn',style:{flex:1},onClick:saveForLater},'💾 임시저장'),
-      h('button',{className:'btn-p',style:{flex:2},disabled:!valid,onClick:submit},'인증 완료 후 결과 보기')
-    )
-  );
-}
-
-// ── 미완료 접수 목록 페이지 (변경 3번 하위 기능) ──
-function PendingList(props) {
-  var s1 = useState(loadPending());
-  var list = s1[0], setList = s1[1];
-
-  function refresh(){ setList(loadPending()); }
-
-  function del(receiptNumber, e){
-    e.stopPropagation();
-    if(confirm('접수번호 '+receiptNumber+'을(를) 삭제하시겠습니까?')){
-      removePending(receiptNumber);
-      refresh();
-    }
-  }
-
-  function fmtDate(iso){
-    try {
-      var d = new Date(iso);
-      var mm = String(d.getMonth()+1).padStart(2,'0');
-      var dd = String(d.getDate()).padStart(2,'0');
-      var hh = String(d.getHours()).padStart(2,'0');
-      var mi = String(d.getMinutes()).padStart(2,'0');
-      return mm+'/'+dd+' '+hh+':'+mi;
-    } catch(e){ return ''; }
-  }
-
-  return h('div',{className:'pg'},
-    h('div',{className:'card',style:{marginBottom:'13px'}},
-      h('div',{className:'card-t'},'📋 미완료 접수함'),
-      h('div',{className:'card-s',style:{marginBottom:'0'}},
-        '본인인증을 마치지 못한 접수 건들을 여기서 이어서 진행할 수 있어요.'
-      )
-    ),
-    list.length===0 ?
-      h('div',{className:'card'},
-        h('div',{className:'saved-empty'},
-          h('div',{className:'saved-empty-i'},'📭'),
-          h('div',{className:'saved-empty-t'},'미완료 접수가 없습니다'),
-          h('div',{className:'saved-empty-s'},'접수 진행 중 임시저장하면 여기에 표시됩니다')
-        )
-      )
-    :
-      list.map(function(item){
-        var grade = item.result && item.result.final_grade;
-        var gcfg = grade && GC[grade];
-        return h('div',{key:item.receiptNumber,className:'saved-card',onClick:function(){props.onOpen(item);}},
-          h('div',{className:'saved-h'},
-            h('div',{className:'saved-num'}, item.receiptNumber),
-            h('div',{className:'saved-status status-'+(item.status||'pending')},
-              item.status==='completed'?'검수완료':'본인인증 대기'
-            )
-          ),
-          h('div',{className:'saved-info'},
-            h('span',null,'📅 ',fmtDate(item.savedAt)),
-            h('span',null,'📸 ',item.method==='mri'?'MRI':'직접',' · ',(item.photos||[]).length,'장'),
-            gcfg && h('span',{style:{color:gcfg.color,fontWeight:'800'}},gcfg.emoji+' '+grade)
-          ),
-          (item.photos && item.photos.length>0) && h('div',{className:'saved-thumbs'},
-            item.photos.slice(0,6).map(function(p,i){return h('img',{key:i,src:p.url,alt:'p'+i});})
-          ),
-          h('div',{style:{display:'flex',gap:'6px',marginTop:'10px'}},
-            h('button',{className:'btn-p',style:{padding:'9px 0',fontSize:'12px'},
-              onClick:function(e){e.stopPropagation();props.onOpen(item);}},
-              '📝 본인인증 진행하기'
-            ),
-            h('button',{style:{background:'#FEE2E2',color:'#991B1B',border:'1px solid #FECACA',borderRadius:'10px',padding:'9px 14px',fontSize:'12px',fontWeight:'700',cursor:'pointer'},
-              onClick:function(e){del(item.receiptNumber,e);}},
-              '🗑️'
-            )
-          )
-        );
-      }),
-    h('button',{className:'btn-sk',onClick:props.onGoHome,style:{marginTop:'16px'}},
-      '← 홈으로'
+      h('button',{className:'btn-p',disabled:!valid,onClick:submit},'다음 단계 →')
     )
   );
 }
@@ -748,18 +606,27 @@ function GradeChangeModal(props) {
 
 // ── 5. 판정 결과 (v20: 검수 단계 제거, 시연용 심플화) ──
 function Result(props) {
-  var result=props.result,photos=props.photos,authInfo=props.authInfo;
+  var result=props.result,photos=props.photos;
+  var customer=props.customer||{};
 
   var grade=result.final_grade||'';
   var cfg=GC[grade]||{ko:grade,color:'#64748B',bg:'#F1F5F9',emoji:'❓'};
   var di=result.device_info||{};
   var model=di.model_name||'';
   var storage=di.storage||'';
-  var confVal=result.confidence;
-  var confLabel=typeof confVal==='number'?(confVal>=0.8?'높음':confVal>=0.5?'보통':'낮음'):(confVal==='high'?'높음':confVal==='medium'?'보통':'낮음');
-  var priceKey=null;
-  Object.keys(PRICES).forEach(function(k){if(model.indexOf(k)>=0)priceKey=k;});
-  var prices=priceKey?PRICES[priceKey]:null;
+  // v23: 신뢰도는 서버(_confidence.js)에서 산출된 값을 사용
+  var cd=result.confidence_detail||{};
+  var confScore=typeof cd.score==='number'?cd.score:Math.round((result.confidence||0)*100);
+  var route=result.route||cd.route||'review';
+  var isAuto=route==='auto';
+  var threshold=cd.threshold||85;
+  var confLabel=confScore>=85?'높음':confScore>=60?'보통':'낮음';
+
+  // v23: 단가는 서버(_prices.js, 9월 1호)에서 조회된 값을 사용
+  var pinfo=result.price_info||null;
+  var prices=pinfo?pinfo.prices:null;
+  var priceKey=pinfo?pinfo.stdPetName:null;
+  var finalPrice=(result.final_price!=null)?result.final_price:(prices?prices[grade]:null);
 
   // decision_path
   var dp=result.decision_path;
@@ -825,7 +692,33 @@ function Result(props) {
     photos.length>0&&h('div',{className:'pt-mini'},
       photos.map(function(p,i){return h('img',{key:i,src:p.url,alt:'p'+i});})
     ),
-    authInfo&&h('div',{className:'al al-ok'},'✅ 인증 완료 · '+authInfo.name+' ('+authInfo.carrier+' · '+authInfo.phone+')'),
+    // v23: 신뢰도 라우팅 배너
+    h('div',{style:{background:isAuto?'#ECFDF5':'#FFF7ED',border:'1px solid '+(isAuto?'#A7F3D0':'#FED7AA'),
+      borderRadius:'12px',padding:'14px 16px',marginBottom:'13px'}},
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}},
+        h('span',{style:{fontWeight:'800',fontSize:'14px',color:isAuto?'#047857':'#C2410C'}},
+          isAuto?'✅ AI 자동 확정':'🔍 관리자 검수 필요'),
+        h('span',{style:{fontFamily:'monospace',fontWeight:'800',fontSize:'16px',color:isAuto?'#047857':'#C2410C'}},
+          '신뢰도 '+confScore+'%')
+      ),
+      h('div',{style:{fontSize:'11px',color:'#64748B',marginBottom:cd.deductions&&cd.deductions.length?'8px':'0'}},
+        isAuto
+          ? ('기준 '+threshold+'% 이상 — 고객에게 바로 발송할 수 있습니다.')
+          : ('기준 '+threshold+'% 미만 — 관리자 페이지에서 재판정 후 발송됩니다.')
+      ),
+      // 감점 내역
+      cd.deductions&&cd.deductions.length>0&&h('div',{style:{borderTop:'1px dashed '+(isAuto?'#A7F3D0':'#FED7AA'),paddingTop:'8px'}},
+        h('div',{style:{fontSize:'10px',color:'#94A3B8',fontWeight:'700',marginBottom:'4px'}},
+          'AI 자기보고 '+(cd.aiConfidence||0)+'% 에서 차감된 항목'),
+        cd.deductions.map(function(d,i){
+          return h('div',{key:i,style:{fontSize:'11px',color:'#475569',padding:'2px 0'}},
+            h('span',{style:{fontFamily:'monospace',fontWeight:'800',color:'#DC2626',marginRight:'6px'}},
+              '-'+d.penalty),
+            d.label
+          );
+        })
+      )
+    ),
 
     diFields.length>0&&h('div',{className:'card',style:{padding:'16px 18px'}},
       h('div',{style:{fontWeight:'700',fontSize:'14px',marginBottom:'11px'}},'📱 기기 정보 (OCR)'),
@@ -838,9 +731,22 @@ function Result(props) {
       })
     ),
     h('div',{className:'card',style:{padding:'16px 18px'}},
-      h('div',{style:{fontWeight:'700',fontSize:'14px',marginBottom:'11px'}},
-        '💰 5등급 예상 매입가',
-        priceKey&&h('span',{style:{fontSize:'11px',color:'#64748B',fontWeight:'400',marginLeft:'6px'}},priceKey+' '+storage)
+      h('div',{style:{fontWeight:'700',fontSize:'14px',marginBottom:'4px'}},
+        '💰 매입가',
+        priceKey&&h('span',{style:{fontSize:'11px',color:'#64748B',fontWeight:'400',marginLeft:'6px'}},priceKey)
+      ),
+      pinfo&&h('div',{style:{fontSize:'10px',color:'#94A3B8',marginBottom:'11px'}},
+        '단가표 '+(pinfo.priceVersion||'')+
+        (pinfo.matchType==='exact'?' · 모델번호 정확매칭'
+          :pinfo.matchType==='model_only'?' · 모델번호 매칭(용량 미확인)'
+          :pinfo.matchType==='fallback'?' · ⚠️ 모델 특정 실패(기타 단가)'
+          :' · 모델명 매칭')
+      ),
+      // 확정 매입가 강조
+      finalPrice!=null&&h('div',{style:{background:cfg.bg,borderRadius:'10px',padding:'13px 15px',marginBottom:'12px',
+        display:'flex',justifyContent:'space-between',alignItems:'center'}},
+        h('span',{style:{fontSize:'12px',fontWeight:'700',color:cfg.color}},grade+' 확정 매입가'),
+        h('span',{style:{fontSize:'21px',fontWeight:'900',color:cfg.color}},fmt(finalPrice))
       ),
       prices?h('table',{className:'ptable'},h('tbody',null,
         Object.entries(GC).filter(function(e){return e[0]!=='검수불가';}).map(function(e){
@@ -879,115 +785,152 @@ function Result(props) {
         );
       })
     ),
+    // ── v23: 고객 발송 카드 ──
+    h(SendCard,{
+      isAuto: isAuto,
+      customer: customer,
+      receiptNumber: props.receiptNumber,
+      grade: grade,
+      price: finalPrice,
+      modelName: model,
+      saving: props.saving,
+      saveError: props.saveError
+    }),
     h('button',{className:'btn-p',onClick:props.onRestart,style:{marginBottom:'20px'}},'🔄 새 단말기 접수하기')
   );
 }
 
+// ── v23: 고객 발송 카드 ──
+function SendCard(props){
+  var s1=useState('idle'); var state=s1[0],setState=s1[1];   // idle | sending | sent | error
+  var s2=useState('');     var msg=s2[0],setMsg=s2[1];
+  var s3=useState(null);   var info=s3[0],setInfo=s3[1];
+
+  var phone=props.customer.phone||'';
+  var phoneView=phone.length>=10?(phone.slice(0,3)+'-'+phone.slice(3,7)+'-'+phone.slice(7)):phone;
+
+  function send(){
+    if(props.saving){ setMsg('접수 저장이 아직 진행 중입니다. 잠시 후 다시 시도해주세요.'); setState('error'); return; }
+    setState('sending'); setMsg('');
+    fetch('/api/receipts',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'send',receiptNumber:props.receiptNumber})
+    })
+    .then(function(r){return r.json().then(function(d){return {ok:r.ok,data:d};});})
+    .then(function(r){
+      if(!r.ok) throw new Error(r.data.error||'발송 실패');
+      setInfo(r.data); setState('sent');
+    })
+    .catch(function(e){ setMsg(e.message); setState('error'); });
+  }
+
+  // 검수 대기 건은 발송 불가
+  if(!props.isAuto){
+    return h('div',{className:'card',style:{padding:'16px 18px',background:'#FFF7ED',border:'1px solid #FED7AA'}},
+      h('div',{style:{fontWeight:'800',fontSize:'14px',marginBottom:'7px',color:'#C2410C'}},'🔍 관리자 검수 대기'),
+      h('div',{style:{fontSize:'12px',color:'#7C2D12',lineHeight:'1.6'}},
+        '신뢰도가 기준에 미달하여 이 건은 ',h('strong',null,'관리자 페이지의 검수 대기열'),'로 넘어갔습니다.',h('br'),
+        '검수자가 등급을 확정하면 고객에게 문자가 발송됩니다.'
+      ),
+      h('div',{style:{marginTop:'11px',padding:'10px 12px',background:'#fff',borderRadius:'9px',fontSize:'12px'}},
+        h('div',null,h('strong',null,'고객'),' : ',props.customer.name||'-'),
+        h('div',null,h('strong',null,'연락처'),' : ',phoneView||'-')
+      )
+    );
+  }
+
+  if(state==='sent'){
+    return h('div',{className:'card',style:{padding:'16px 18px',background:'#ECFDF5',border:'1px solid #A7F3D0'}},
+      h('div',{style:{fontWeight:'800',fontSize:'14px',marginBottom:'7px',color:'#047857'}},'📨 발송 완료'),
+      h('div',{style:{fontSize:'12px',color:'#065F46',lineHeight:'1.6'}},
+        phoneView,' 로 판정결과와 거래확인 링크를 발송했습니다.',h('br'),
+        '고객이 링크에서 본인인증과 계좌입력을 완료하면 입금 처리됩니다.'
+      ),
+      info&&info.sms&&info.sms.simulated&&h('div',{className:'al al-warn',style:{marginTop:'10px'}},
+        '⚠️ Solapi 환경변수가 설정되지 않아 실제 문자는 발송되지 않았습니다 (시뮬레이션).'
+      ),
+      info&&info.link&&h('div',{style:{marginTop:'10px'}},
+        h('div',{style:{fontSize:'10px',color:'#94A3B8',fontWeight:'700',marginBottom:'4px'}},'고객 확인 링크'),
+        h('a',{href:info.link,target:'_blank',
+          style:{fontSize:'12px',color:'#0369A1',wordBreak:'break-all',fontFamily:'monospace'}},info.link)
+      )
+    );
+  }
+
+  return h('div',{className:'card',style:{padding:'16px 18px'}},
+    h('div',{style:{fontWeight:'700',fontSize:'14px',marginBottom:'11px'}},'📨 고객에게 결과 발송'),
+    h('div',{style:{background:'#F8FAFC',borderRadius:'9px',padding:'11px 13px',fontSize:'12px',marginBottom:'12px'}},
+      h('div',{style:{padding:'2px 0'}},h('strong',null,'고객 성함'),' : ',props.customer.name||'-'),
+      h('div',{style:{padding:'2px 0'}},h('strong',null,'연락처'),' : ',phoneView||'-'),
+      h('div',{style:{padding:'2px 0'}},h('strong',null,'발송 내용'),' : ',props.grade,' · ',fmt(props.price))
+    ),
+    state==='error'&&h('div',{className:'al al-err'},'⚠️ '+msg),
+    h('button',{className:'btn-p',disabled:state==='sending',onClick:send},
+      state==='sending'?'발송 중...':'📨 발송하기')
+  );
+}
+
 // ── 메인 앱 ──
+// v23 플로우: Landing → 고객정보 → 촬영방식 → 사진업로드 → 판정결과·발송
 function App() {
-  var s0=useState('flow');var view=s0[0],setView=s0[1];
-  var s1=useState(0);var step=s1[0],setStep=s1[1];
-  var s2=useState(null);var method=s2[0],setMethod=s2[1];
-  var s3=useState(null);var result=s3[0],setResult=s3[1];
-  var s4=useState([]);var photos=s4[0],setPhotos=s4[1];
-  var s5=useState(null);var authFinal=s5[0],setAuthFinal=s5[1];
-  var s6=useState(null);var receiptNumber=s6[0],setReceiptNumber=s6[1];
-  var s7=useState(null);var savedAuthInfo=s7[0],setSavedAuthInfo=s7[1];
+  var s1=useState(0);    var step=s1[0],setStep=s1[1];
+  var s2=useState(null); var method=s2[0],setMethod=s2[1];
+  var s3=useState(null); var result=s3[0],setResult=s3[1];
+  var s4=useState([]);   var photos=s4[0],setPhotos=s4[1];
+  var s5=useState(null); var customer=s5[0],setCustomer=s5[1];
+  var s6=useState(null); var receiptNumber=s6[0],setReceiptNumber=s6[1];
+  var s7=useState(false);var saving=s7[0],setSaving=s7[1];
+  var s8=useState('');   var saveError=s8[0],setSaveError=s8[1];
 
   function restart(){
-    setView('flow');
-    setStep(0);
-    setMethod(null);
-    setResult(null);
-    setPhotos([]);
-    setAuthFinal(null);
-    setReceiptNumber(null);
-    setSavedAuthInfo(null);
+    setStep(0); setMethod(null); setResult(null); setPhotos([]);
+    setCustomer(null); setReceiptNumber(null); setSaving(false); setSaveError('');
   }
-
   function goHome(){ restart(); }
-  function goPending(){ setView('pending'); }
 
-  function openPendingItem(item){
-    setReceiptNumber(item.receiptNumber);
-    setMethod(item.method);
-    setResult(item.result);
-    setSavedAuthInfo(item.authInfo);
-    var restoredPhotos = (item.photos||[]).map(function(p,i){
-      return {
-        url: p.url,
-        b64: p.b64,
-        file: {type: p.mediaType||'image/jpeg', name:'photo_'+i}
-      };
-    });
-    setPhotos(restoredPhotos);
-    setView('flow');
-    setStep(3);
-  }
-
-  // 본인인증 완료 시: DB에 접수 저장 + 다음 단계로
-  function handleAuthDone(info){
-    setAuthFinal(info);
-    // 로컬 임시저장 정리
-    if(receiptNumber){
-      var list = loadPending();
-      list.forEach(function(item){
-        if(item.receiptNumber===receiptNumber){
-          item.status='completed';
-          item.authInfo=info;
-        }
-      });
-      savePending(list);
-    }
+  // 판정 완료 시: 접수번호 발급 + DB 저장 → 결과 화면으로
+  function handleResult(r, p){
+    var num = genReceiptNumber();
+    setResult(r); setPhotos(p); setReceiptNumber(num);
     setStep(4);
 
-    // 백엔드 DB에 접수 저장 (실패해도 다음 단계 진행)
+    setSaving(true); setSaveError('');
     fetch('/api/receipts',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        receiptNumber: receiptNumber,
-        result: result,
-        photos: photos.map(function(p){return {url:p.url,mediaType:p.file.type};}),
-        authInfo: info,
+        receiptNumber: num,
+        result: r,
+        photos: p.map(function(x){return {url:x.url,mediaType:x.file.type};}),
+        customerName: customer ? customer.name : null,
+        customerPhone: customer ? customer.phone : null,
         method: method
       })
-    }).catch(function(e){ console.error('접수 저장 실패:', e); });
-  }
-
-  if(view==='pending'){
-    return h('div',null,
-      h(Header,{onGoHome:goHome,onGoPending:goPending}),
-      h(PendingList,{onOpen:openPendingItem,onGoHome:goHome})
-    );
+    })
+    .then(function(res){return res.json().then(function(d){return {ok:res.ok,data:d};});})
+    .then(function(res){ if(!res.ok) throw new Error(res.data.error||'접수 저장 실패'); })
+    .catch(function(e){ setSaveError(e.message); console.error('접수 저장 실패:', e); })
+    .finally(function(){ setSaving(false); });
   }
 
   return h('div',null,
-    h(Header,{onGoHome:goHome,onGoPending:goPending}),
+    h(Header,{onGoHome:goHome}),
     step>0 && h(StepBar,{cur:stepDisplay(step)}),
     step===0 && h(Landing,{onNext:function(){setStep(1);}}),
-    step===1 && h(Method,{onSelect:function(m){setMethod(m);setStep(2);}}),
-    step===2 && h(Upload,{method:method,onResult:function(r,p){
-      setResult(r);
-      setPhotos(p);
-      if(!receiptNumber) setReceiptNumber(genReceiptNumber());
-      setStep(3);
-    }}),
-    step===3 && h(Auth,{
-      photos: photos,
-      method: method,
-      result: result,
-      receiptNumber: receiptNumber,
-      savedInfo: savedAuthInfo,
-      onDone: handleAuthDone,
-      onGoHome: goHome,
-      onGoPending: goPending
+    step===1 && h(CustomerInfo,{
+      saved: customer,
+      onDone:function(info){ setCustomer(info); setStep(2); }
     }),
+    step===2 && h(Method,{onSelect:function(m){setMethod(m);setStep(3);}}),
+    step===3 && h(Upload,{method:method,onResult:handleResult}),
     step===4 && h(Result,{
       result: result,
       photos: photos,
-      authInfo: authFinal,
+      customer: customer||{},
       receiptNumber: receiptNumber,
+      saving: saving,
+      saveError: saveError,
       onRestart: restart
     })
   );

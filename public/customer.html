@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>리본 중고폰 매입 · 거래확인</title>
+<style>
+:root{--green:#00C473;--green-d:#009E5B;--green-l:#E6FAF3;--navy:#0D1B2A;--gray:#F5F7FA;--border:#E2E8F0;--text:#1A202C;--texts:#4A5568;--textm:#94A3B8;--r:16px;--rs:10px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(--gray);color:var(--text);min-height:100vh}
+.hd{background:#fff;border-bottom:1px solid var(--border);height:56px;padding:0 18px;display:flex;align-items:center;gap:9px;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,.06)}
+.hd-mark{width:30px;height:30px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:17px}
+.hd-name{font-weight:800;font-size:17px;color:var(--navy)}
+.hd-name span{color:var(--green)}
+.pg{max-width:480px;margin:0 auto;padding:20px 15px 90px}
+.card{background:#fff;border-radius:var(--r);padding:19px 20px;margin-bottom:13px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.card-t{font-size:16px;font-weight:800;color:var(--navy);margin-bottom:5px}
+.card-s{font-size:12px;color:var(--texts);margin-bottom:15px;line-height:1.6}
+.stepbar{background:#fff;border-bottom:1px solid var(--border);padding:11px 14px;display:flex;align-items:center}
+.si{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.sd{width:23px;height:23px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;border:2px solid var(--border);color:var(--textm);background:#fff;transition:all .25s}
+.sd.act{background:var(--green);border-color:var(--green);color:#fff;box-shadow:0 0 0 3px rgba(0,196,115,.2)}
+.sd.done{background:var(--green-l);border-color:var(--green);color:var(--green-d)}
+.sl{font-size:10px;color:var(--texts);font-weight:500;white-space:nowrap}
+.sl.act{color:var(--green-d);font-weight:700}
+.sdiv{flex:1;min-width:6px;height:1px;background:var(--border);margin:0 3px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #F1F5F9;font-size:13px}
+.row:last-child{border-bottom:none}
+.row-l{color:var(--texts);font-weight:600}
+.row-v{color:var(--navy);font-weight:700;text-align:right}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.amt{background:var(--green-l);border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;margin:14px 0 4px}
+.amt-l{font-size:13px;font-weight:700;color:var(--green-d)}
+.amt-v{font-size:25px;font-weight:900;color:var(--green-d)}
+.gbadge{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:5px 13px;font-size:13px;font-weight:800}
+.thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:12px}
+.thumbs img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:7px;border:1px solid var(--border)}
+.frow{margin-bottom:13px}
+.flabel{display:block;font-size:12px;font-weight:700;color:var(--texts);margin-bottom:6px}
+.finput,.fselect{width:100%;padding:13px 14px;border:1px solid var(--border);border-radius:var(--rs);font-size:15px;font-family:inherit;background:#fff;color:var(--text)}
+.finput:focus,.fselect:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(0,196,115,.13)}
+.finput:disabled{background:#F8FAFC;color:var(--textm)}
+.btn-p{width:100%;background:var(--green);color:#fff;border:none;border-radius:var(--rs);padding:15px 0;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-p:disabled{background:#CBD5E1;cursor:not-allowed}
+.btn-s{width:100%;background:#fff;color:var(--green-d);border:1.5px solid var(--green);border-radius:var(--rs);padding:13px 0;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-s:disabled{background:#F8FAFC;color:var(--textm);border-color:var(--border);cursor:not-allowed}
+.al{border-radius:var(--rs);padding:11px 13px;font-size:12px;font-weight:600;margin:10px 0;line-height:1.55}
+.al-err{background:#FEF2F2;color:#991B1B;border:1px solid #FECACA}
+.al-ok{background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0}
+.al-info{background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE}
+.agree{display:flex;gap:10px;align-items:flex-start;padding:13px;background:#F8FAFC;border-radius:var(--rs);margin-top:12px;cursor:pointer}
+.agree input{width:19px;height:19px;margin-top:1px;accent-color:var(--green);flex-shrink:0}
+.agree-t{font-size:12px;color:var(--texts);line-height:1.6}
+.timer{font-family:ui-monospace,monospace;font-size:13px;font-weight:800;color:#DC2626}
+.done-wrap{text-align:center;padding:34px 20px}
+.done-ico{font-size:60px;margin-bottom:14px}
+.done-t{font-size:22px;font-weight:900;color:var(--navy);margin-bottom:8px}
+.done-s{font-size:13px;color:var(--texts);line-height:1.7;margin-bottom:22px}
+.spin{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:sp .8s linear infinite;margin:26px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+.pulse{animation:pl 1.4s ease-in-out infinite}
+@keyframes pl{0%,100%{opacity:1}50%{opacity:.45}}
+.sub{font-size:11px;color:var(--textm);margin-top:5px;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+var h = React.createElement;
+var useState = React.useState;
+var useEffect = React.useEffect;
+
+var GC = {
+  'Excellent': {ko:'최상',color:'#0369A1',bg:'#E0F2FE',emoji:'💎'},
+  'Very Good': {ko:'우수',color:'#047857',bg:'#D1FAE5',emoji:'✨'},
+  'Good':      {ko:'좋음',color:'#65A30D',bg:'#ECFCCB',emoji:'👍'},
+  'Normal':    {ko:'보통',color:'#D97706',bg:'#FEF3C7',emoji:'🙂'},
+  'Bad':       {ko:'나쁨',color:'#DC2626',bg:'#FEE2E2',emoji:'😥'},
+  '검수불가':   {ko:'검수불가',color:'#64748B',bg:'#F1F5F9',emoji:'❓'}
+};
+var BANKS = ['KB국민','신한','우리','하나','NH농협','IBK기업','카카오뱅크','토스뱅크','케이뱅크','SC제일','씨티','새마을금고','신협','우체국','부산','대구','광주','전북','경남','제주'];
+var CARRIERS = ['SKT','KT','LG U+','알뜰폰'];
+var STEPS = ['거래내역 확인','본인인증','계좌입력','입금완료'];
+
+function won(n){ return (n==null) ? '-' : Number(n).toLocaleString('ko-KR')+'원'; }
+function getReceiptNumber(){
+  var m = window.location.pathname.match(/\/c\/([^\/?#]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+// ── 헤더 / 스텝바 ──
+function Header(){
+  return h('header',{className:'hd'},
+    h('div',{className:'hd-mark'},'R'),
+    h('div',{className:'hd-name'},h('span',null,'리본'),' 중고폰 매입')
+  );
+}
+function StepBar(props){
+  var items=[];
+  for(var i=0;i<STEPS.length;i++){
+    items.push(h('div',{className:'si',key:i},
+      h('div',{className:'sd'+(i<props.cur?' done':i===props.cur?' act':'')}, i<props.cur?'✓':i+1),
+      h('span',{className:'sl'+(i===props.cur?' act':'')},STEPS[i])
+    ));
+    if(i<STEPS.length-1) items.push(h('div',{className:'sdiv',key:'d'+i}));
+  }
+  return h('div',{className:'stepbar'},items);
+}
+
+// ── STEP 1. 거래내역 확인 ──
+function Review(props){
+  var r=props.receipt;
+  var s1=useState(false); var agree=s1[0],setAgree=s1[1];
+  var s2=useState(false); var busy=s2[0],setBusy=s2[1];
+  var s3=useState('');    var err=s3[0],setErr=s3[1];
+  var g=GC[r.grade]||{ko:r.grade,color:'#64748B',bg:'#F1F5F9',emoji:'❓'};
+
+  function go(){
+    setBusy(true); setErr('');
+    fetch('/api/customer/'+encodeURIComponent(r.receiptNumber),{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'agree'})
+    })
+    .then(function(res){return res.json().then(function(d){return {ok:res.ok,data:d};});})
+    .then(function(res){
+      if(!res.ok) throw new Error(res.data.error||'처리 실패');
+      props.onNext(res.data.receipt);
+    })
+    .catch(function(e){setErr(e.message);})
+    .finally(function(){setBusy(false);});
+  }
+
+  return h('div',{className:'pg'},
+    h('div',{className:'card'},
+      h('div',{className:'card-t'},(r.customerName||'고객')+'님, 검수가 완료되었습니다'),
+      h('div',{className:'card-s'},'아래 판정 내역을 확인하신 후 동의해주시면 매입 대금이 입금됩니다.'),
+      h('div',{style:{textAlign:'center',padding:'6px 0 12px'}},
+        h('span',{className:'gbadge',style:{background:g.bg,color:g.color}},g.emoji+' '+r.grade+' ('+g.ko+')')
+      ),
+      h('div',{className:'row'},h('span',{className:'row-l'},'접수번호'),h('span',{className:'row-v mono'},r.receiptNumber)),
+      h('div',{className:'row'},h('span',{className:'row-l'},'반납 모델'),h('span',{className:'row-v'},r.modelName||'-')),
+      r.storage&&h('div',{className:'row'},h('span',{className:'row-l'},'저장 용량'),h('span',{className:'row-v'},r.storage)),
+      r.imei&&h('div',{className:'row'},h('span',{className:'row-l'},'IMEI'),h('span',{className:'row-v mono'},r.imei)),
+      h('div',{className:'row'},h('span',{className:'row-l'},'연락처'),h('span',{className:'row-v mono'},r.customerPhone||'-')),
+      h('div',{className:'amt'},
+        h('span',{className:'amt-l'},'매입 금액'),
+        h('span',{className:'amt-v'},won(r.price))
+      ),
+      r.priceVersion&&h('div',{className:'sub',style:{textAlign:'right'}},'단가 기준: '+r.priceVersion),
+      r.photos&&r.photos.length>0&&h('div',{className:'thumbs'},
+        r.photos.slice(0,8).map(function(p,i){return h('img',{key:i,src:p.url,alt:'단말기 사진'});})
+      )
+    ),
+    r.summary&&h('div',{className:'card'},
+      h('div',{className:'card-t',style:{fontSize:'14px',marginBottom:'9px'}},'🔍 판정 근거'),
+      h('div',{style:{fontSize:'12px',color:'#4A5568',lineHeight:'1.75'}},r.summary)
+    ),
+    h('div',{className:'card'},
+      h('label',{className:'agree'},
+        h('input',{type:'checkbox',checked:agree,onChange:function(e){setAgree(e.target.checked);}}),
+        h('span',{className:'agree-t'},
+          h('strong',null,'위 판정 결과와 매입 금액에 동의합니다.'),h('br'),
+          '동의 후 본인인증과 계좌 입력을 진행하시면 매입 대금이 입금됩니다. ',
+          '동의하지 않으실 경우 단말기는 반환됩니다.'
+        )
+      ),
+      err&&h('div',{className:'al al-err'},'⚠️ '+err),
+      h('button',{className:'btn-p',style:{marginTop:'14px'},disabled:!agree||busy,onClick:go},
+        busy?'처리 중...':'동의하고 본인인증 진행 →')
+    )
+  );
+}
+// ── STEP 2. 본인인증 ──
+function Verify(props){
+  var r=props.receipt;
+  var s1=useState(r.customerName||''); var name=s1[0],setName=s1[1];
+  var s2=useState('');   var birth=s2[0],setBirth=s2[1];
+  var s3=useState('SKT');var carrier=s3[0],setCarrier=s3[1];
+  var s4=useState('');   var code=s4[0],setCode=s4[1];
+  var s5=useState('idle'); var phase=s5[0],setPhase=s5[1]; // idle | sending | sent | verifying
+  var s6=useState('');   var err=s6[0],setErr=s6[1];
+  var s7=useState(0);    var left=s7[0],setLeft=s7[1];
+  var s8=useState(false);var simulated=s8[0],setSimulated=s8[1];
+
+  useEffect(function(){
+    if(left<=0) return;
+    var t=setTimeout(function(){setLeft(left-1);},1000);
+    return function(){clearTimeout(t);};
+  },[left]);
+
+  var canRequest = name.trim().length>=2 && birth.replace(/\D/g,'').length>=6;
+
+  function request(){
+    setPhase('sending'); setErr('');
+    fetch('/api/send-sms',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({type:'verify',to:r.customerPhone,data:{receiptNumber:r.receiptNumber}})
+    })
+    .then(function(res){return res.json().then(function(d){return {ok:res.ok,data:d};});})
+    .then(function(res){
+      if(!res.ok) throw new Error(res.data.error||'인증번호 발송 실패');
+      setSimulated(!!res.data.simulated);
+      setPhase('sent'); setLeft(180); setCode('');
+    })
+    .catch(function(e){setErr(e.message);setPhase('idle');});
+  }
+
+  function confirm(){
+    if(code.replace(/\D/g,'').length!==6){setErr('인증번호 6자리를 입력해주세요.');return;}
+    setPhase('verifying'); setErr('');
+    fetch('/api/customer/'+encodeURIComponent(r.receiptNumber),{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'verify-confirm',code:code.replace(/\D/g,'')})
+    })
+    .then(function(res){return res.json().then(function(d){return {ok:res.ok,data:d};});})
+    .then(function(res){
+      if(!res.ok) throw new Error(res.data.error||'인증 실패');
+      props.onNext(res.data.receipt);
+    })
+    .catch(function(e){setErr(e.message);setPhase('sent');});
+  }
+
+  var mm=String(Math.floor(left/60)).padStart(2,'0');
+  var ss=String(left%60).padStart(2,'0');
+
+  return h('div',{className:'pg'},
+    h('div',{className:'al al-info'},
+      '🔒 매입 대금을 안전하게 지급하기 위해 본인확인이 필요합니다. 접수 시 등록된 번호(',
+      h('strong',null,r.customerPhone),')로 인증번호가 발송됩니다.'
+    ),
+    h('div',{className:'card'},
+      h('div',{className:'card-t'},'본인인증'),
+      h('div',{className:'card-s'},'단말기 소유자 본인의 정보를 입력해주세요.'),
+      h('div',{className:'frow'},
+        h('label',{className:'flabel'},'이름'),
+        h('input',{className:'finput',value:name,disabled:phase==='sent'||phase==='verifying',
+          onChange:function(e){setName(e.target.value);}})
+      ),
+      h('div',{className:'frow'},
+        h('label',{className:'flabel'},'생년월일 6자리'),
+        h('input',{className:'finput',placeholder:'900101',value:birth,inputMode:'numeric',maxLength:6,
+          disabled:phase==='sent'||phase==='verifying',
+          onChange:function(e){setBirth(e.target.value.replace(/\D/g,'').slice(0,6));}})
+      ),
+      h('div',{className:'frow'},
+        h('label',{className:'flabel'},'통신사'),
+        h('select',{className:'fselect',value:carrier,disabled:phase==='sent'||phase==='verifying',
+          onChange:function(e){setCarrier(e.target.value);}},
+          CARRIERS.map(function(c){return h('option',{key:c,value:c},c);}))
+      ),
+      h('div',{className:'frow'},
+        h('label',{className:'flabel'},'휴대폰 번호'),
+        h('input',{className:'finput',value:r.customerPhone||'',disabled:true})
+      ),
+
+      phase!=='sent'&&phase!=='verifying'&&h('button',{className:'btn-s',disabled:!canRequest||phase==='sending',onClick:request},
+        phase==='sending'?'발송 중...':'📩 인증번호 받기'),
+
+      (phase==='sent'||phase==='verifying')&&h('div',null,
+        simulated&&h('div',{className:'al al-info'},
+          'ℹ️ 문자 발송 설정이 완료되지 않아 인증번호가 실제로 전송되지 않았습니다. (시연 환경)'),
+        h('div',{className:'frow',style:{marginTop:'14px'}},
+          h('label',{className:'flabel'},
+            '인증번호 6자리',
+            left>0&&h('span',{className:'timer',style:{marginLeft:'8px'}},mm+':'+ss)
+          ),
+          h('input',{className:'finput mono',placeholder:'000000',value:code,inputMode:'numeric',maxLength:6,
+            style:{letterSpacing:'6px',fontSize:'20px',textAlign:'center',fontWeight:'800'},
+            onChange:function(e){setCode(e.target.value.replace(/\D/g,'').slice(0,6));setErr('');}})
+        ),
+        h('button',{className:'btn-p',disabled:phase==='verifying'||code.length!==6,onClick:confirm},
+          phase==='verifying'?'확인 중...':'인증 확인'),
+        h('button',{className:'btn-s',style:{marginTop:'9px'},disabled:left>120,onClick:request},
+          left>120?('재발송 가능까지 '+(left-120)+'초'):'인증번호 재발송')
+      ),
+      err&&h('div',{className:'al al-err'},'⚠️ '+err)
+    )
+  );
+}
+
+// ── STEP 3. 계좌입력 ──
+function Account(props){
+  var r=props.receipt;
+  var s1=useState(''); var bank=s1[0],setBank=s1[1];
+  var s2=useState(''); var acc=s2[0],setAcc=s2[1];
+  var s3=useState(r.customerName||''); var holder=s3[0],setHolder=s3[1];
+  var s4=useState(false); var busy=s4[0],setBusy=s4[1];
+  var s5=useState('');    var err=s5[0],setErr=s5[1];
+
+  var valid = bank && acc.replace(/\D/g,'').length>=8 && holder.trim().length>=2;
+
+  function submit(){
+    setBusy(true); setErr('');
+    fetch('/api/customer/'+encodeURIComponent(r.receiptNumber),{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'submit-account',bankName:bank,accountNo:acc.replace(/\D/g,''),holderName:holder.trim()})
+    })
+    .then(function(res){return res.json().then(function(d){return {ok:res.ok,data:d};});})
+    .then(function(res){
+      if(!res.ok) throw new Error(res.data.error||'처리 실패');
+      props.onNext(res.data.receipt, res.data.sms);
+    })
+    .catch(function(e){setErr(e.message);setBusy(false);});
+  }
+
+  if(busy){
+    return h('div',{className:'pg'},
+      h('div',{className:'card'},
+        h('div',{className:'spin'}),
+        h('div',{style:{textAlign:'center',fontSize:'15px',fontWeight:'800',color:'#0D1B2A'},className:'pulse'},'입금 처리 중입니다'),
+        h('div',{style:{textAlign:'center',fontSize:'12px',color:'#94A3B8',marginTop:'7px',marginBottom:'12px'}},'잠시만 기다려주세요')
+      )
+    );
+  }
+
+  return h('div',{className:'pg'},
+    h('div',{className:'al al-ok'},'✅ 본인인증이 완료되었습니다.'),
+    h('div',{className:'card'},
+      h('div',{className:'card-t'},'입금 계좌 입력'),
+      h('div',{className:'card-s'},'매입 대금 '+won(r.price)+'을 입금받으실 계좌를 입력해주세요.'),
+      h('div',{className:'frow'},
+        h('label',{className:'flabel'},'은행'),
+        h('select',{className:'fselect',value:bank,onChange:function(e){setBank(e.target.value);setErr('');}},
+          h('option',{value:''},'은행 선택'),
+          BANKS.map(function(b){return h('option',{key:b,value:b},b);}))
+      ),
+      h('div',{className:'frow'},
+        h('label',{className:'flabel'},'계좌번호'),
+        h('input',{className:'finput mono',placeholder:"'-' 없이 숫자만",value:acc,inputMode:'numeric',
+          onChange:function(e){setAcc(e.target.value.replace(/[^0-9-]/g,''));setErr('');}})
+      ),
+      h('div',{className:'frow'},
+        h('label',{className:'flabel'},'예금주'),
+        h('input',{className:'finput',placeholder:'홍길동',value:holder,
+          onChange:function(e){setHolder(e.target.value);setErr('');}})
+      ),
+      h('div',{className:'sub'},'※ 본인 명의 계좌만 입금이 가능합니다. 예금주가 다를 경우 입금이 지연될 수 있습니다.'),
+      err&&h('div',{className:'al al-err'},'⚠️ '+err),
+      h('button',{className:'btn-p',style:{marginTop:'14px'},disabled:!valid,onClick:submit},
+        won(r.price)+' 입금받기')
+    )
+  );
+}
+
+// ── STEP 4. 입금완료 ──
+function Done(props){
+  var r=props.receipt;
+  return h('div',{className:'pg'},
+    h('div',{className:'card'},
+      h('div',{className:'done-wrap'},
+        h('div',{className:'done-ico'},'🎉'),
+        h('div',{className:'done-t'},'입금이 완료되었습니다'),
+        h('div',{className:'done-s'},
+          (r.customerName||'고객')+'님의 계좌로',h('br'),
+          h('strong',{style:{color:'#009E5B',fontSize:'17px'}},won(r.price)),'이 입금되었습니다.'
+        )
+      ),
+      h('div',{className:'row'},h('span',{className:'row-l'},'접수번호'),h('span',{className:'row-v mono'},r.receiptNumber)),
+      h('div',{className:'row'},h('span',{className:'row-l'},'반납 모델'),h('span',{className:'row-v'},r.modelName||'-')),
+      h('div',{className:'row'},h('span',{className:'row-l'},'판정 등급'),h('span',{className:'row-v'},r.grade||'-')),
+      h('div',{className:'row'},h('span',{className:'row-l'},'입금 계좌'),
+        h('span',{className:'row-v mono'},(r.bankName||'')+' '+(r.accountMasked||''))),
+      h('div',{className:'row'},h('span',{className:'row-l'},'입금 금액'),
+        h('span',{className:'row-v',style:{color:'#009E5B',fontSize:'15px',fontWeight:'900'}},won(r.price)))
+    ),
+    props.sms&&props.sms.simulated&&h('div',{className:'al al-info'},
+      'ℹ️ 문자 발송 설정이 완료되지 않아 입금완료 안내 문자가 전송되지 않았습니다. (시연 환경)'),
+    h('div',{className:'card'},
+      h('div',{style:{fontSize:'12px',color:'#4A5568',lineHeight:'1.75',textAlign:'center'}},
+        '리본을 이용해주셔서 감사합니다.',h('br'),
+        '문의 : 리본 고객센터 ',h('strong',null,'1588-3822')
+      )
+    )
+  );
+}
+
+// ── 메인 ──
+function App(){
+  var s1=useState('loading'); var view=s1[0],setView=s1[1];
+  var s2=useState(null);      var receipt=s2[0],setReceipt=s2[1];
+  var s3=useState('');        var err=s3[0],setErr=s3[1];
+  var s4=useState(null);      var sms=s4[0],setSms=s4[1];
+
+  useEffect(function(){
+    var num=getReceiptNumber();
+    if(!num){ setErr('잘못된 접근입니다. 문자로 받으신 링크로 접속해주세요.'); setView('error'); return; }
+    fetch('/api/customer/'+encodeURIComponent(num))
+      .then(function(res){return res.json().then(function(d){return {ok:res.ok,data:d};});})
+      .then(function(res){
+        if(!res.ok) throw new Error(res.data.error||'거래내역을 불러올 수 없습니다');
+        var r=res.data.receipt;
+        setReceipt(r);
+        // 이미 진행된 단계가 있으면 이어서
+        if(r.paidAt) setView('done');
+        else if(r.verifiedAt) setView('account');
+        else if(r.agreedAt) setView('verify');
+        else setView('review');
+      })
+      .catch(function(e){ setErr(e.message); setView('error'); });
+  },[]);
+
+  var stepIdx = view==='review'?0 : view==='verify'?1 : view==='account'?2 : view==='done'?3 : -1;
+
+  if(view==='loading'){
+    return h('div',null,h(Header),h('div',{className:'pg'},
+      h('div',{className:'card'},h('div',{className:'spin'}),
+        h('div',{style:{textAlign:'center',fontSize:'13px',color:'#94A3B8'}},'거래내역을 불러오는 중입니다'))));
+  }
+  if(view==='error'){
+    return h('div',null,h(Header),h('div',{className:'pg'},
+      h('div',{className:'card'},
+        h('div',{className:'done-wrap'},
+          h('div',{className:'done-ico'},'🔍'),
+          h('div',{className:'done-t'},'거래내역을 찾을 수 없습니다'),
+          h('div',{className:'done-s'},err)
+        ),
+        h('div',{style:{fontSize:'12px',color:'#4A5568',textAlign:'center'}},
+          '문의 : 리본 고객센터 ',h('strong',null,'1588-3822')))));
+  }
+
+  return h('div',null,
+    h(Header),
+    h(StepBar,{cur:stepIdx}),
+    view==='review'  && h(Review,{receipt:receipt,onNext:function(r){setReceipt(r);setView('verify');}}),
+    view==='verify'  && h(Verify,{receipt:receipt,onNext:function(r){setReceipt(r);setView('account');}}),
+    view==='account' && h(Account,{receipt:receipt,onNext:function(r,sm){setReceipt(r);setSms(sm);setView('done');}}),
+    view==='done'    && h(Done,{receipt:receipt,sms:sms})
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+</script>
+</body>
+</html>

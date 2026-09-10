@@ -12,6 +12,7 @@
     "api/receipts/[number].js": { "maxDuration": 10 },
     "api/customer/[number].js": { "maxDuration": 20 },
     "api/send-sms.js": { "maxDuration": 15 },
+    "api/models.js": { "maxDuration": 10 },
     "api/login.js": { "maxDuration": 10 }
   }
 }

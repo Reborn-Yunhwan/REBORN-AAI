@@ -556,4 +556,46 @@ function guessMaker(mn, pet){
   return null;
 }
 
-export default { lookupPrice, PRICE_VERSION, GRADE_ORDER };
+
+// ── 간편접수용 모델 카탈로그 ────────────────────────────
+// 제조사 → 모델(표준펫네임) → 용량 순으로 선택할 수 있도록 가공해서 반환한다.
+// 표준펫네임에 용량이 붙어있는 경우(예: '아이폰15 128G')는 용량 부분을 떼고 묶는다.
+export function getCatalog(){
+  var byMaker = {};
+  var MAKER = { '삼성':'삼성', '애플':'애플', 'LG':'LG' };
+
+  ROWS.forEach(function(r){
+    var no = r[0], cap = r[1], pet = r[2], std = r[3];
+
+    var maker = null;
+    if(no.indexOf('SM-') === 0) maker = '삼성';
+    else if(/^A[0-9]{4}$/.test(no)) maker = '애플';
+    else maker = 'LG';
+    if(!MAKER[maker]) return;
+
+    // 표준펫네임 끝에 붙은 용량 표기 제거 ('아이폰15 128G' → '아이폰15')
+    var label = String(std).replace(/\s*[0-9]+\s*(GB?|TB)\s*$/i, '').trim();
+    if(!label) label = pet;
+
+    if(!byMaker[maker]) byMaker[maker] = {};
+    var key = maker + '|' + label;
+    if(!byMaker[maker][label]){
+      byMaker[maker][label] = { label: label, modelNo: no, storages: [] };
+    }
+    var m = byMaker[maker][label];
+    if(m.storages.indexOf(cap) < 0) m.storages.push(cap);
+  });
+
+  var out = {};
+  Object.keys(byMaker).forEach(function(mk){
+    out[mk] = Object.keys(byMaker[mk]).map(function(label){
+      var m = byMaker[mk][label];
+      m.storages.sort(function(a,b){ return capBytes(a) - capBytes(b); });
+      return m;
+    }).sort(function(a,b){ return a.label.localeCompare(b.label, 'ko'); });
+  });
+
+  return out;
+}
+
+export default { lookupPrice, getCatalog, PRICE_VERSION, GRADE_ORDER };

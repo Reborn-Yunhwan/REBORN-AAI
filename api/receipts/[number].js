@@ -1,5 +1,6 @@
 import { kv } from '@vercel/kv';
 import crypto from 'crypto';
+import { lookupPrice } from '../_prices.js';
 
 function verifySession(req){
   const token = req.headers['x-admin-token'];
@@ -52,14 +53,17 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, receipt: record });
     }
 
-    // PATCH — 등급 수정
+    // PATCH — 등급 확정 (검수)
+    // v24: AI 판정과 '동일한 등급으로 확정'하는 것도 허용한다.
+    //      검수자가 "AI 판정이 맞다"고 확인하는 것 역시 유효한 검수 결과이기 때문.
+    //      확정된 등급으로 매입가도 다시 계산해서 반영한다.
     if(req.method === 'PATCH'){
       const { newGrade, reviewNote } = req.body || {};
       if(!newGrade || !reviewNote){
-        return res.status(400).json({ error: '새 등급과 수정 사유가 필요합니다' });
+        return res.status(400).json({ error: '확정 등급과 사유가 필요합니다' });
       }
       if(reviewNote.trim().length < 5){
-        return res.status(400).json({ error: '수정 사유를 5자 이상 입력해주세요' });
+        return res.status(400).json({ error: '사유를 5자 이상 입력해주세요' });
       }
 
       const record = await kv.get(`receipt:${number}`);
@@ -67,19 +71,47 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: '접수를 찾을 수 없습니다' });
       }
 
+      const prevGrade = record.result ? record.result.final_grade : null;
+      const prevPrice = record.finalPrice;
+
       // 등급 및 이력 업데이트
       record.reviewedGrade = newGrade;
       record.reviewNote = reviewNote.trim();
       record.reviewedAt = new Date().toISOString();
       record.reviewedBy = userId;
-      // AI 판정의 final_grade도 업데이트 (표시용)
+      record.gradeChanged = (prevGrade !== newGrade);
       if(record.result){
         record.result.final_grade = newGrade;
       }
 
+      // ── 확정 등급 기준으로 매입가 재계산 ──
+      // 접수 시 조회해둔 price_info 를 우선 사용하고, 없으면 단가표를 다시 조회한다.
+      let priceInfo = record.result && record.result.price_info;
+      if(!priceInfo){
+        const di = (record.result && record.result.device_info) || {};
+        priceInfo = lookupPrice(di.model_number, di.storage, di.model_name, null);
+        if(record.result) record.result.price_info = priceInfo;
+      }
+
+      let newPrice = null;
+      if(priceInfo && priceInfo.prices && priceInfo.prices[newGrade] != null){
+        newPrice = priceInfo.prices[newGrade];
+      }
+      record.finalPrice = newPrice;
+      if(record.result) record.result.final_price = newPrice;
+
+      record.priceChanged = (prevPrice !== newPrice);
+
       await kv.set(`receipt:${number}`, record, { ex: 60 * 60 * 24 * 90 });
 
-      return res.status(200).json({ ok: true, receipt: record });
+      return res.status(200).json({
+        ok: true,
+        receipt: record,
+        change: {
+          gradeFrom: prevGrade, gradeTo: newGrade, gradeChanged: record.gradeChanged,
+          priceFrom: prevPrice, priceTo: newPrice, priceChanged: record.priceChanged
+        }
+      });
     }
 
     // DELETE — 삭제

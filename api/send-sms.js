@@ -64,6 +64,18 @@ function buildMessage(type, data, baseUrl){
            `문의 : 리본 고객센터(1588-3822)`;
   }
 
+  if(type === 'pickup'){
+    return `[리본 중고폰 매입] ${name} 고객님\n\n` +
+           `간편접수가 완료되었습니다.\n` +
+           `택배 수거가 접수되었으니 단말기를 준비해주세요.\n\n` +
+           `▶ 접수번호 : ${num}\n` +
+           `▶ 신청모델 : ${data.modelName || '-'}\n` +
+           `▶ 예상금액 : ${data.priceRange || '입고 후 판정'}\n\n` +
+           `단말기가 입고되면 검수 후\n` +
+           `판정결과와 거래확인 링크를 다시 보내드립니다.\n\n` +
+           `문의 : 리본 고객센터(1588-3822)`;
+  }
+
   // type === 'result' (기본)
   const grade = data.grade || '-';
   const ko = GRADE_KO[grade] || '';
@@ -148,7 +160,7 @@ export default async function handler(req, res){
           text: text,
           // 90바이트 초과 시 자동으로 LMS 로 발송
           type: Buffer.byteLength(text, 'utf8') > 90 ? 'LMS' : 'SMS',
-          subject: msgType === 'paid' ? '리본 입금완료 안내' : '리본 판정결과 안내'
+          subject: msgType === 'paid' ? '리본 입금완료 안내' : (msgType === 'pickup' ? '리본 간편접수 완료' : '리본 판정결과 안내')
         }
       })
     });

@@ -247,14 +247,16 @@ function resizeImage(file, maxSize, quality){
 
 var CARRIERS = ['SKT','KT','LGU+','SKT 알뜰폰','KT 알뜰폰','LGU+ 알뜰폰','기타'];
 // v20: 사용자 눈에 보이는 스텝은 3단계로 통합
-// v23: 접수 단계에서 본인인증 제거 — 본인인증은 고객이 문자 링크에서 직접 진행
-// 내부 step 0=Landing, 1=CustomerInfo, 2=Method, 3=Upload, 4=Result
-// 표시용 스텝: 0=고객 정보, 1=사진 촬영, 2=판정결과·발송
-var STEPS = ['고객 정보','사진 촬영','판정결과·발송'];
+// v24: 접수 경로 2개
+//   photo  : 고객정보 → 사진촬영 → 판정결과·발송   (촬영방식 구분 없이 통합)
+//   simple : 고객정보 → 모델선택 → 접수완료        (촬영 없이 택배 접수)
+// 내부 step 0=Landing, 1=CustomerInfo, 2=Upload/ModelSelect, 3=Result/SimpleDone
+var STEPS_PHOTO  = ['고객 정보','사진 촬영','판정결과·발송'];
+var STEPS_SIMPLE = ['고객 정보','모델 선택','접수완료'];
 function stepDisplay(internalStep){
-  if(internalStep===1) return 0;             // CustomerInfo
-  if(internalStep===2 || internalStep===3) return 1; // Method, Upload
-  if(internalStep===4) return 2;             // Result
+  if(internalStep===1) return 0;
+  if(internalStep===2) return 1;
+  if(internalStep===3) return 2;
   return -1; // Landing은 스텝바 안보임
 }
 var AREA_LABELS = {front:'전면(액정)',back:'후면',bezel_side:'베젤/측면',camera:'카메라'};
@@ -287,15 +289,16 @@ function Header(props) {
 // ── 스텝바 ──
 function StepBar(props) {
   var cur = props.cur;
+  var labels = props.steps || STEPS_PHOTO;
   var items = [];
-  for(var i=0;i<STEPS.length;i++){
+  for(var i=0;i<labels.length;i++){
     items.push(
       h('div',{className:'si',key:i},
         h('div',{className:'sd'+(i<cur?' done':i===cur?' act':'')}, i<cur?'✓':i+1),
-        h('span',{className:'sl'+(i===cur?' act':'')}, STEPS[i])
+        h('span',{className:'sl'+(i===cur?' act':'')}, labels[i])
       )
     );
-    if(i<STEPS.length-1) items.push(h('div',{className:'sdiv',key:'d'+i}));
+    if(i<labels.length-1) items.push(h('div',{className:'sdiv',key:'d'+i}));
   }
   return h('div',{className:'stepbar'}, items);
 }
@@ -339,7 +342,14 @@ function Landing(props) {
       h('div',{className:'hero-badge'}, 'KT M&S · 리본 사업팀'),
       h('h1',null,'중고폰을', h('br'), h('em',null,'AI가 정확하게'), ' 판정합니다'),
       h('p',null,'사진 몇 장으로 등급과 예상 매입가를',h('br'),'바로 확인해보세요. 최소 30초.'),
-      h('button',{className:'btn-cta',onClick:props.onNext}, '📱  지금 바로 접수하기')
+      h('button',{className:'btn-cta',onClick:function(){props.onStart('photo');}}, '📱  사진 촬영하고 접수하기'),
+      h('button',{className:'btn-cta',onClick:function(){props.onStart('simple');},
+        style:{background:'#fff',color:'#009E5B',border:'1.5px solid #00C473',boxShadow:'none',marginTop:'9px'}},
+        '📦  촬영 없이 간편접수 (택배)')
+    ),
+    h('div',{style:{fontSize:'11px',color:'#64748B',textAlign:'center',marginBottom:'13px',lineHeight:'1.6'}},
+      '촬영이 번거로우시면 간편접수를 이용하세요.',h('br'),
+      '모델과 용량만 선택하면 택배로 수거해 드립니다.'
     ),
     // 시세조회 링크 (변경 1번)
     h('a',{className:'btn-link',href:'https://smri.co.kr/current/price',target:'_blank',rel:'noopener noreferrer'},
@@ -348,7 +358,7 @@ function Landing(props) {
     h('div',{className:'ig'},
       [['🤖','AI 자동 판정','33,000건 실거래 데이터 학습'],
        ['⚡','30초 결과','사진 업로드 후 즉시 확인'],
-       ['📸','MRI 촬영 지원','MRI·직접 촬영 모두 지원'],
+       ['📦','촬영 없이 접수','모델만 고르면 택배 수거'],
        ['💰','5등급 매입가','등급별 예상 금액 바로 확인']
       ].map(function(c){return h('div',{className:'ic',key:c[1]},
         h('div',{className:'ic-ico'},c[0]),h('h3',null,c[1]),h('p',null,c[2])
@@ -370,32 +380,176 @@ function Landing(props) {
   );
 }
 
-// ── 2. 촬영방식 (변경 3번: 사전 연락 안내 추가) ──
-function Method(props) {
-  var s=useState(null);var sel=s[0],setSel=s[1];
-  return h('div',{className:'pg',style:{paddingBottom:'90px'}},
-    // v23: 본인인증은 고객이 문자 링크에서 직접 진행
-    h('div',{className:'notice'},
-      h('span',{className:'notice-icon'},'ℹ️'),
-      h('strong',null,'본인인증은 고객이 직접 진행합니다'),h('br'),
-      '접수 단계에서는 본인인증이 필요하지 않습니다. 판정 결과를 문자로 받은 고객이 ',
-      h('strong',null,'링크에서 직접 본인인증과 계좌입력'),'을 진행합니다.'
-    ),
-    h('div',{className:'card'},
-      h('div',{className:'card-t'},'촬영 방식 선택'),
-      h('div',{className:'card-s'},'단말기를 어떤 방식으로 촬영하셨나요?'),
-      [['mri','🔬','MRI기기 촬영','MRI 전용 장비로 촬영한 사진입니다. 조명 반사를 AI가 자동 구분합니다.','권장','#EFF6FF','#2563EB'],
-       ['direct','📱','직접 촬영','스마트폰 등으로 직접 촬영한 사진입니다. 밝은 조명에서 선명하게 촬영해주세요.','일반','#F5F3FF','#7C3AED']
-      ].map(function(m){
-        return h('div',{key:m[0],className:'mc'+(sel===m[0]?' sel':''),onClick:function(){setSel(m[0]);}},
-          h('div',{className:'mc-ico'},m[1]),
-          h('div',{className:'mc-info'},h('h4',null,m[2]),h('p',null,m[3])),
-          h('span',{className:'mc-badge',style:{background:m[5],color:m[6]}},m[4])
-        );
+// ── 2-B. 간편접수: 모델 선택 (v24 신규) ──
+// 촬영 없이 제조사 / 모델 / 용량 / IMEI 만으로 접수하고 택배 수거를 신청한다.
+function ModelSelect(props) {
+  var s1=useState(null);  var catalog=s1[0],setCatalog=s1[1];
+  var s2=useState([]);    var makers=s2[0],setMakers=s2[1];
+  var s3=useState('');    var maker=s3[0],setMaker=s3[1];
+  var s4=useState('');    var modelLabel=s4[0],setModelLabel=s4[1];
+  var s5=useState('');    var storage=s5[0],setStorage=s5[1];
+  var s6=useState('');    var imei=s6[0],setImei=s6[1];
+  var s7=useState('');    var err=s7[0],setErr=s7[1];
+  var s8=useState(true);  var loading=s8[0],setLoading=s8[1];
+  var s9=useState(false); var submitting=s9[0],setSubmitting=s9[1];
+  var sA=useState('');    var priceVersion=sA[0],setPriceVersion=sA[1];
+  var sB=useState('');    var search=sB[0],setSearch=sB[1];
+
+  useEffect(function(){
+    fetch('/api/models')
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(!d.ok) throw new Error(d.error||'모델 목록을 불러오지 못했습니다');
+        setCatalog(d.catalog); setMakers(d.makers||[]); setPriceVersion(d.priceVersion||'');
       })
+      .catch(function(e){ setErr(e.message); })
+      .finally(function(){ setLoading(false); });
+  },[]);
+
+  var models = (catalog && maker && catalog[maker]) ? catalog[maker] : [];
+  var visible = search
+    ? models.filter(function(m){ return m.label.toLowerCase().indexOf(search.toLowerCase())>=0; })
+    : models;
+  var picked = models.filter(function(m){ return m.label===modelLabel; })[0] || null;
+  var storages = picked ? picked.storages : [];
+
+  // 선택된 모델+용량의 등급별 단가는 서버에서 조회한다
+  var sC=useState(null); var priceInfo=sC[0],setPriceInfo=sC[1];
+  useEffect(function(){
+    if(!picked || !storage){ setPriceInfo(null); return; }
+    fetch('/api/models?modelNo='+encodeURIComponent(picked.modelNo)+
+          '&storage='+encodeURIComponent(storage)+
+          '&modelName='+encodeURIComponent(picked.label))
+      .then(function(r){return r.json();})
+      .then(function(d){ setPriceInfo(d.ok ? d.priceInfo : null); })
+      .catch(function(){ setPriceInfo(null); });
+  },[modelLabel, storage]);
+
+  var imeiDigits = imei.replace(/\D/g,'');
+  var valid = maker && modelLabel && storage;
+
+  function submit(){
+    if(!valid){ setErr('제조사, 모델, 용량을 모두 선택해주세요.'); return; }
+    if(imeiDigits && imeiDigits.length !== 15){
+      setErr('IMEI는 15자리 숫자입니다. 정확히 입력하시거나 비워두세요.'); return;
+    }
+    setErr(''); setSubmitting(true);
+    props.onSubmit({
+      maker: maker,
+      modelName: picked.label,
+      modelNo: picked.modelNo,
+      storage: storage,
+      imei: imeiDigits || null,
+      priceInfo: priceInfo
+    }, function(msg){ setErr(msg); setSubmitting(false); });
+  }
+
+  if(loading){
+    return h('div',{className:'pg'},
+      h('div',{className:'card'},
+        h('div',{style:{textAlign:'center',padding:'30px 0',color:'#94A3B8',fontSize:'13px'}},
+          '모델 목록을 불러오는 중입니다...')));
+  }
+
+  return h('div',{className:'pg',style:{paddingBottom:'90px'}},
+    h('div',{className:'notice'},
+      h('span',{className:'notice-icon'},'📦'),
+      h('strong',null,'촬영 없이 접수하기'),h('br'),
+      '모델과 용량만 선택하면 접수가 완료되고 ',h('strong',null,'택배 수거가 신청'),'됩니다.',h('br'),
+      '단말기가 입고되면 검수 후 판정결과를 문자로 보내드립니다.'
     ),
+
+    h('div',{className:'card'},
+      h('div',{className:'card-t'},'단말기 정보'),
+      h('div',{className:'card-s'},'제조사와 모델, 용량을 선택해주세요.'),
+
+      // 제조사
+      h('div',{className:'frow'},
+        h('label',{className:'flabel'},'제조사'),
+        h('div',{style:{display:'flex',gap:'7px'}},
+          makers.map(function(m){
+            var on = maker===m;
+            return h('button',{key:m,
+              onClick:function(){setMaker(m);setModelLabel('');setStorage('');setSearch('');setErr('');},
+              style:{flex:1,padding:'13px 0',borderRadius:'10px',fontSize:'14px',fontWeight:'800',
+                cursor:'pointer',fontFamily:'inherit',
+                border:'2px solid '+(on?'#00C473':'#E2E8F0'),
+                background:on?'#E6FAF3':'#fff', color:on?'#009E5B':'#4A5568'}}, m);
+          })
+        )
+      ),
+
+      // 모델
+      maker && h('div',{className:'frow'},
+        h('label',{className:'flabel'},'모델 ('+models.length+'종)'),
+        h('input',{className:'finput',placeholder:'🔍 모델명 검색 (예: S24, 아이폰15)',value:search,
+          style:{marginBottom:'8px'},
+          onChange:function(e){setSearch(e.target.value);}}),
+        h('select',{className:'fselect',value:modelLabel,
+          onChange:function(e){setModelLabel(e.target.value);setStorage('');setErr('');}},
+          h('option',{value:''},'모델 선택'),
+          visible.map(function(m){ return h('option',{key:m.label,value:m.label},m.label); })
+        ),
+        search && visible.length===0 && h('div',{style:{fontSize:'11px',color:'#DC2626',marginTop:'5px'}},
+          "'"+search+"' 검색 결과가 없습니다")
+      ),
+
+      // 용량
+      picked && h('div',{className:'frow'},
+        h('label',{className:'flabel'},'저장 용량'),
+        h('div',{style:{display:'flex',gap:'7px',flexWrap:'wrap'}},
+          storages.map(function(c){
+            var on = storage===c;
+            return h('button',{key:c,onClick:function(){setStorage(c);setErr('');},
+              style:{flex:'1 1 auto',minWidth:'74px',padding:'12px 0',borderRadius:'10px',
+                fontSize:'14px',fontWeight:'800',cursor:'pointer',fontFamily:'inherit',
+                border:'2px solid '+(on?'#00C473':'#E2E8F0'),
+                background:on?'#E6FAF3':'#fff', color:on?'#009E5B':'#4A5568'}}, c);
+          })
+        )
+      ),
+
+      // IMEI (선택)
+      picked && storage && h('div',{className:'frow'},
+        h('label',{className:'flabel'},'IMEI (선택 · 15자리)'),
+        h('input',{className:'finput',placeholder:'설정 → 일반 → 정보에서 확인',value:imei,inputMode:'numeric',
+          style:{fontFamily:'ui-monospace,monospace'},
+          onChange:function(e){setImei(e.target.value.replace(/[^0-9]/g,'').slice(0,15));setErr('');}}),
+        h('div',{style:{fontSize:'11px',color:'#94A3B8',marginTop:'5px'}},
+          imeiDigits.length>0 ? (imeiDigits.length+'/15자리') : '지금 모르시면 비워두셔도 됩니다')
+      )
+    ),
+
+    // 등급별 예상 매입가
+    priceInfo && h('div',{className:'card',style:{padding:'16px 18px'}},
+      h('div',{style:{fontWeight:'700',fontSize:'14px',marginBottom:'4px'}},
+        '💰 등급별 예상 매입가',
+        h('span',{style:{fontSize:'11px',color:'#64748B',fontWeight:'400',marginLeft:'6px'}},
+          priceInfo.stdPetName)
+      ),
+      h('div',{style:{fontSize:'10px',color:'#94A3B8',marginBottom:'11px'}},
+        '단가표 '+(priceInfo.priceVersion||priceVersion)),
+      h('table',{className:'ptable'},h('tbody',null,
+        Object.entries(GC).filter(function(e){return e[0]!=='검수불가';}).map(function(e){
+          var key=e[0],g=e[1];
+          return h('tr',{key:key},
+            h('td',null,
+              h('span',{style:{fontWeight:'700',color:g.color}},g.emoji+' '+key),
+              h('span',{style:{fontSize:'11px',color:'#94a3b8',marginLeft:'5px'}},g.ko)
+            ),
+            h('td',{style:{textAlign:'right',color:'#374151',fontWeight:'700'}},fmt(priceInfo.prices[key]))
+          );
+        })
+      )),
+      h('div',{className:'hint',style:{marginTop:'11px'}},
+        '💡 실제 매입가는 단말기 입고 후 검수를 통해 확정됩니다.')
+    ),
+
+    err&&h('div',{className:'al al-err'},'⚠️ '+err),
+
     h('div',{className:'bb'},
-      h('button',{className:'btn-p',disabled:!sel,onClick:function(){props.onSelect(sel);}},'다음 단계 →')
+      h('button',{className:'btn-p',disabled:!valid||submitting,onClick:submit},
+        submitting ? '접수 중...' : '📦 신청하기 (택배 접수)')
     )
   );
 }
@@ -409,7 +563,8 @@ function Upload(props) {
   var baseRef=useRef(null);
   var extraRef=useRef(null);
 
-  var maxBase = props.method==='mri' ? 16 : 12;
+  // v24: MRI/직접 촬영 구분 없이 통합. AI가 사진을 보고 촬영 환경을 스스로 판단한다.
+  var maxBase = 16;
   var maxExtra = 6;
 
   function addFiles(files, isExtra){
@@ -438,7 +593,7 @@ function Upload(props) {
     fetch('/api/grade',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({images:allPhotos.map(function(p){return {media_type:p.file.type,data:p.b64};}),method:props.method}),
+      body:JSON.stringify({images:allPhotos.map(function(p){return {media_type:p.file.type,data:p.b64};}),method:'auto'}),
     })
     .then(function(res){return res.json().then(function(d){return {ok:res.ok,data:d};});})
     .then(function(r){
@@ -478,8 +633,8 @@ function Upload(props) {
       h('div',{style:{fontSize:'12px',color:'rgba(255,255,255,.6)'}},'잠시만 기다려주세요 (약 10~30초)')
     ),
     h('div',{className:'card'},
-      h('div',{className:'card-t'},'사진 업로드'),
-      h('div',{className:'card-s'},(props.method==='mri'?'🔬 MRI기기 촬영':'📱 직접 촬영')),
+      h('div',{className:'card-t'},'사진 촬영'),
+      h('div',{className:'card-s'},'MRI 촬영본과 직접 촬영본 모두 업로드할 수 있습니다.'),
       h('div',{className:'hint'},'💡 전면(화면), 후면, 측면(4방향), 카메라, 기기정보(설정→일반→정보) 화면을 포함하면 IMEI·배터리까지 자동 추출됩니다.'),
 
       h('div',{className:'subhead'},'단말기 기본 사진 ('+basePhotos.length+'/'+maxBase+')'),
@@ -871,29 +1026,83 @@ function SendCard(props){
   );
 }
 
+// ── 2-C. 간편접수 완료 (v24 신규) ──
+function SimpleDone(props){
+  var d = props.data || {};
+  var pi = d.priceInfo;
+  return h('div',{className:'pg'},
+    h('div',{className:'card'},
+      h('div',{style:{textAlign:'center',padding:'26px 10px 18px'}},
+        h('div',{style:{fontSize:'56px',marginBottom:'12px'}},'📦'),
+        h('div',{style:{fontSize:'21px',fontWeight:'900',color:'#0D1B2A',marginBottom:'8px'}},
+          '택배 접수가 완료되었습니다'),
+        h('div',{style:{fontSize:'13px',color:'#4A5568',lineHeight:'1.7'}},
+          (d.customerName||'고객')+'님의 단말기 수거가 신청되었습니다.',h('br'),
+          '접수 안내 문자를 발송해 드렸습니다.')
+      ),
+      h('div',{style:{background:'#F1F5F9',borderRadius:'10px',padding:'13px 15px',marginTop:'6px'}},
+        h('div',{style:{display:'flex',justifyContent:'space-between',padding:'5px 0',fontSize:'13px'}},
+          h('span',{style:{color:'#4A5568',fontWeight:'600'}},'접수번호'),
+          h('span',{style:{fontFamily:'ui-monospace,monospace',fontWeight:'800'}},props.receiptNumber)),
+        h('div',{style:{display:'flex',justifyContent:'space-between',padding:'5px 0',fontSize:'13px'}},
+          h('span',{style:{color:'#4A5568',fontWeight:'600'}},'신청 모델'),
+          h('span',{style:{fontWeight:'700'}},(d.modelName||'-')+' '+(d.storage||''))),
+        d.imei&&h('div',{style:{display:'flex',justifyContent:'space-between',padding:'5px 0',fontSize:'13px'}},
+          h('span',{style:{color:'#4A5568',fontWeight:'600'}},'IMEI'),
+          h('span',{style:{fontFamily:'ui-monospace,monospace',fontSize:'12px'}},d.imei)),
+        h('div',{style:{display:'flex',justifyContent:'space-between',padding:'5px 0',fontSize:'13px'}},
+          h('span',{style:{color:'#4A5568',fontWeight:'600'}},'연락처'),
+          h('span',{style:{fontFamily:'ui-monospace,monospace'}},d.customerPhone||'-'))
+      ),
+      pi&&h('div',{style:{marginTop:'13px'}},
+        h('div',{style:{fontWeight:'700',fontSize:'13px',marginBottom:'8px'}},'💰 등급별 예상 매입가'),
+        h('table',{className:'ptable'},h('tbody',null,
+          Object.entries(GC).filter(function(e){return e[0]!=='검수불가';}).map(function(e){
+            var key=e[0],g=e[1];
+            return h('tr',{key:key},
+              h('td',null,h('span',{style:{fontWeight:'700',color:g.color}},g.emoji+' '+key)),
+              h('td',{style:{textAlign:'right',fontWeight:'700',color:'#374151'}},fmt(pi.prices[key]))
+            );
+          })
+        ))
+      ),
+      props.sms&&props.sms.simulated&&h('div',{className:'al al-warn',style:{marginTop:'11px'}},
+        '⚠️ Solapi 환경변수 미설정으로 실제 문자는 발송되지 않았습니다 (시뮬레이션).'),
+      h('div',{className:'hint',style:{marginTop:'13px'}},
+        '💡 단말기가 입고되면 검수를 진행하고, 판정결과와 거래확인 링크를 문자로 보내드립니다. 확정 매입가는 검수 후 결정됩니다.')
+    ),
+    h('button',{className:'btn-p',onClick:props.onRestart,style:{marginBottom:'20px'}},'🔄 새 단말기 접수하기')
+  );
+}
+
 // ── 메인 앱 ──
-// v23 플로우: Landing → 고객정보 → 촬영방식 → 사진업로드 → 판정결과·발송
+// v24 플로우
+//   photo  : Landing → 고객정보 → 사진촬영 → 판정결과·발송
+//   simple : Landing → 고객정보 → 모델선택 → 접수완료(택배)
 function App() {
-  var s1=useState(0);    var step=s1[0],setStep=s1[1];
-  var s2=useState(null); var method=s2[0],setMethod=s2[1];
-  var s3=useState(null); var result=s3[0],setResult=s3[1];
-  var s4=useState([]);   var photos=s4[0],setPhotos=s4[1];
-  var s5=useState(null); var customer=s5[0],setCustomer=s5[1];
-  var s6=useState(null); var receiptNumber=s6[0],setReceiptNumber=s6[1];
-  var s7=useState(false);var saving=s7[0],setSaving=s7[1];
-  var s8=useState('');   var saveError=s8[0],setSaveError=s8[1];
+  var s1=useState(0);     var step=s1[0],setStep=s1[1];
+  var s2=useState('photo');var flow=s2[0],setFlow=s2[1];   // 'photo' | 'simple'
+  var s3=useState(null);  var result=s3[0],setResult=s3[1];
+  var s4=useState([]);    var photos=s4[0],setPhotos=s4[1];
+  var s5=useState(null);  var customer=s5[0],setCustomer=s5[1];
+  var s6=useState(null);  var receiptNumber=s6[0],setReceiptNumber=s6[1];
+  var s7=useState(false); var saving=s7[0],setSaving=s7[1];
+  var s8=useState('');    var saveError=s8[0],setSaveError=s8[1];
+  var s9=useState(null);  var simpleData=s9[0],setSimpleData=s9[1];
+  var sA=useState(null);  var simpleSms=sA[0],setSimpleSms=sA[1];
 
   function restart(){
-    setStep(0); setMethod(null); setResult(null); setPhotos([]);
+    setStep(0); setFlow('photo'); setResult(null); setPhotos([]);
     setCustomer(null); setReceiptNumber(null); setSaving(false); setSaveError('');
+    setSimpleData(null); setSimpleSms(null);
   }
   function goHome(){ restart(); }
 
-  // 판정 완료 시: 접수번호 발급 + DB 저장 → 결과 화면으로
+  // 촬영 접수: 판정 완료 → 접수번호 발급 + DB 저장
   function handleResult(r, p){
     var num = genReceiptNumber();
     setResult(r); setPhotos(p); setReceiptNumber(num);
-    setStep(4);
+    setStep(3);
 
     setSaving(true); setSaveError('');
     fetch('/api/receipts',{
@@ -905,7 +1114,7 @@ function App() {
         photos: p.map(function(x){return {url:x.url,mediaType:x.file.type};}),
         customerName: customer ? customer.name : null,
         customerPhone: customer ? customer.phone : null,
-        method: method
+        method: 'auto'
       })
     })
     .then(function(res){return res.json().then(function(d){return {ok:res.ok,data:d};});})
@@ -914,23 +1123,69 @@ function App() {
     .finally(function(){ setSaving(false); });
   }
 
+  // 간편접수: 모델 선택 완료 → 저장 + 택배 접수 문자
+  function handleSimpleSubmit(info, onError){
+    var num = genReceiptNumber();
+    fetch('/api/receipts',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        receiptType: 'simple',
+        receiptNumber: num,
+        customerName: customer ? customer.name : null,
+        customerPhone: customer ? customer.phone : null,
+        maker: info.maker,
+        modelName: info.modelName,
+        modelNo: info.modelNo,
+        storage: info.storage,
+        imei: info.imei
+      })
+    })
+    .then(function(res){return res.json().then(function(d){return {ok:res.ok,data:d};});})
+    .then(function(res){
+      if(!res.ok) throw new Error(res.data.error||'접수 실패');
+      setReceiptNumber(num);
+      setSimpleData({
+        maker: info.maker, modelName: info.modelName, storage: info.storage,
+        imei: info.imei, priceInfo: res.data.priceInfo || info.priceInfo,
+        customerName: customer ? customer.name : null,
+        customerPhone: customer ? customer.phone : null
+      });
+      setSimpleSms(res.data.sms || null);
+      setStep(3);
+    })
+    .catch(function(e){ if(onError) onError(e.message); });
+  }
+
+  var steps = flow==='simple' ? STEPS_SIMPLE : STEPS_PHOTO;
+
   return h('div',null,
     h(Header,{onGoHome:goHome}),
-    step>0 && h(StepBar,{cur:stepDisplay(step)}),
-    step===0 && h(Landing,{onNext:function(){setStep(1);}}),
+    step>0 && h(StepBar,{cur:stepDisplay(step),steps:steps}),
+
+    step===0 && h(Landing,{onStart:function(f){ setFlow(f); setStep(1); }}),
+
     step===1 && h(CustomerInfo,{
       saved: customer,
       onDone:function(info){ setCustomer(info); setStep(2); }
     }),
-    step===2 && h(Method,{onSelect:function(m){setMethod(m);setStep(3);}}),
-    step===3 && h(Upload,{method:method,onResult:handleResult}),
-    step===4 && h(Result,{
+
+    step===2 && flow==='photo'  && h(Upload,{onResult:handleResult}),
+    step===2 && flow==='simple' && h(ModelSelect,{onSubmit:handleSimpleSubmit}),
+
+    step===3 && flow==='photo' && h(Result,{
       result: result,
       photos: photos,
       customer: customer||{},
       receiptNumber: receiptNumber,
       saving: saving,
       saveError: saveError,
+      onRestart: restart
+    }),
+    step===3 && flow==='simple' && h(SimpleDone,{
+      data: simpleData,
+      receiptNumber: receiptNumber,
+      sms: simpleSms,
       onRestart: restart
     })
   );

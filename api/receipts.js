@@ -1,5 +1,6 @@
 import { kv } from '@vercel/kv';
 import crypto from 'crypto';
+import { lookupPrice } from './_prices.js';
 
 export const config = {
   api: { bodyParser: { sizeLimit: '10mb' } }
@@ -92,7 +93,92 @@ export default async function handler(req, res) {
         });
       }
 
-      // ── 기본: 접수 저장 ──
+      // ── 간편접수 (촬영 없이 모델/용량/IMEI 만으로 접수) ──
+      if(body.receiptType === 'simple'){
+        const { receiptNumber, customerName, customerPhone, maker, modelName, modelNo, storage, imei } = body;
+        if(!receiptNumber || !modelName || !storage){
+          return res.status(400).json({ error: '모델과 용량은 필수입니다' });
+        }
+        if(!customerName || !customerPhone){
+          return res.status(400).json({ error: '고객 성함과 연락처는 필수입니다' });
+        }
+
+        const priceInfo = lookupPrice(modelNo, storage, modelName, maker);
+
+        const record = {
+          receiptNumber,
+          receiptType: 'simple',
+          customerName,
+          customerPhone: String(customerPhone).replace(/[^0-9]/g, ''),
+          method: 'none',
+          createdAt: new Date().toISOString(),
+
+          // 간편접수는 사진이 없으므로 AI 판정 자체가 없다.
+          // 입고 후 판정 단계로 넘어가는 상태로 저장한다.
+          result: {
+            final_grade: null,
+            price_info: priceInfo,
+            final_price: null,
+            device_info: {
+              model_name: modelName,
+              model_number: modelNo || null,
+              storage: storage,
+              imei: imei || null
+            },
+            summary: '간편접수 건 — 단말기 입고 후 검수 예정'
+          },
+          photos: [],
+          route: 'simple',
+          confidenceScore: null,
+          confidenceDetail: null,
+          status: 'awaiting_delivery',   // 입고 대기
+          finalPrice: null,
+          originalGrade: null,
+          reviewedGrade: null,
+          reviewNote: null,
+          reviewedAt: null,
+          reviewedBy: null,
+          sentAt: null,
+          pickupRequestedAt: new Date().toISOString()
+        };
+
+        await kv.set(`receipt:${receiptNumber}`, record, { ex: 60 * 60 * 24 * 90 });
+        await kv.zadd('receipts:index', { score: Date.now(), member: receiptNumber });
+
+        // 택배 접수 안내 문자 발송
+        const proto = (req.headers['x-forwarded-proto'] || 'https');
+        const base = process.env.PUBLIC_BASE_URL || `${proto}://${req.headers['host']}`;
+        let smsOut = null;
+        try {
+          const pr = priceInfo ? priceInfo.prices : null;
+          const priceRange = pr
+            ? (Number(pr['Bad']).toLocaleString('ko-KR') + '원 ~ ' + Number(pr['Excellent']).toLocaleString('ko-KR') + '원')
+            : null;
+          const smsRes = await fetch(`${base}/api/send-sms`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'pickup',
+              to: record.customerPhone,
+              data: { receiptNumber, customerName, modelName: modelName + ' ' + storage, priceRange }
+            })
+          });
+          smsOut = await smsRes.json();
+        } catch(e){
+          console.error('pickup sms failed:', e);
+        }
+
+        return res.status(200).json({
+          ok: true,
+          receiptNumber,
+          receiptType: 'simple',
+          status: record.status,
+          priceInfo,
+          sms: smsOut
+        });
+      }
+
+      // ── 기본: 촬영 접수 저장 ──
       const { receiptNumber, result, photos, customerName, customerPhone, method } = body;
       if(!receiptNumber || !result){
         return res.status(400).json({ error: '필수 데이터 누락' });

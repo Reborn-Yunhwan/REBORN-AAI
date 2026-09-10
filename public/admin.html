@@ -228,10 +228,15 @@ function GradeChangeModal(props){
   var s3 = useState(''); var err = s3[0], setErr = s3[1];
   var s4 = useState(false); var loading = s4[0], setLoading = s4[1];
 
+  // v24: AI 판정과 동일한 등급으로 확정하는 것도 유효한 검수 결과이므로 허용한다.
+  var isSame = newGrade === props.currentGrade;
+  var prices = props.priceInfo && props.priceInfo.prices;
+  var newPrice = (prices && newGrade && prices[newGrade] != null) ? prices[newGrade] : null;
+  var curPrice = props.currentPrice;
+
   function submit(){
-    if(!newGrade){ setErr('변경할 등급을 선택해주세요'); return; }
-    if(newGrade === props.currentGrade){ setErr('현재 등급과 다른 등급을 선택해주세요'); return; }
-    if(!reason.trim() || reason.trim().length < 5){ setErr('수정 사유를 5자 이상 입력해주세요'); return; }
+    if(!newGrade){ setErr('확정할 등급을 선택해주세요'); return; }
+    if(!reason.trim() || reason.trim().length < 5){ setErr('사유를 5자 이상 입력해주세요'); return; }
     setErr(''); setLoading(true);
     props.onSubmit(newGrade, reason.trim())
       .catch(function(e){ setErr(e.message); setLoading(false); });
@@ -240,35 +245,61 @@ function GradeChangeModal(props){
   return h('div', {className:'modal-bg', onClick:props.onClose},
     h('div', {className:'modal change-modal', onClick:function(e){e.stopPropagation();}},
       h('div', {className:'modal-h'},
-        h('h3', null, '⚡ 등급 수정'),
+        h('h3', null, '⚡ 등급 확정'),
         h('button', {className:'modal-x', onClick:props.onClose}, '✕')
       ),
       h('div', {className:'modal-b'},
         h('div', {style:{fontSize:'12px', color:'#64748B', marginBottom:'12px'}},
-          '현재 AI 판정: ',
-          h('strong', {style:{color: GC[props.currentGrade] ? GC[props.currentGrade].color : '#000'}},
-            props.currentGrade
-          )
+          props.currentGrade ? 'AI 판정: ' : '현재 상태: ',
+          h('strong', {style:{color: GC[props.currentGrade] ? GC[props.currentGrade].color : '#94A3B8'}},
+            props.currentGrade || '판정 전 (간편접수)'
+          ),
+          curPrice != null && h('span', null, '  ·  ' + fmt(curPrice))
         ),
         h('div', {className:'frow'},
-          h('label', {className:'flabel'}, '변경할 등급'),
-          h('select', {className:'fselect', value:newGrade, onChange:function(e){setNewGrade(e.target.value);}},
+          h('label', {className:'flabel'}, '확정 등급'),
+          h('select', {className:'fselect', value:newGrade, onChange:function(e){setNewGrade(e.target.value);setErr('');}},
             h('option', {value:''}, '등급 선택'),
             Object.entries(GC).map(function(e){
-              return h('option', {key:e[0], value:e[0]}, e[1].emoji + ' ' + e[0] + ' (' + e[1].ko + ')');
+              var same = e[0] === props.currentGrade;
+              return h('option', {key:e[0], value:e[0]},
+                e[1].emoji + ' ' + e[0] + ' (' + e[1].ko + ')' +
+                (same && props.currentGrade ? '  ← AI 판정과 동일' : ''));
             })
           )
         ),
+        // v24: 확정 시 반영될 매입가 미리보기
+        newGrade && h('div', {style:{background: isSame ? '#F8FAFC' : '#FFF7ED',
+            border:'1px solid ' + (isSame ? '#E2E8F0' : '#FED7AA'),
+            borderRadius:'10px', padding:'12px 14px', marginBottom:'13px'}},
+          h('div', {style:{fontSize:'11px', fontWeight:'800', color: isSame ? '#64748B' : '#C2410C', marginBottom:'6px'}},
+            !props.currentGrade ? '📦 입고 검수 결과를 확정합니다'
+              : isSame ? '✓ AI 판정을 그대로 확정합니다' : '⚡ 등급이 변경됩니다'),
+          h('div', {style:{fontSize:'13px', color:'#0D1B2A', fontWeight:'700'}},
+            (props.currentGrade || '판정 전') + ' → ' + newGrade
+          ),
+          h('div', {style:{fontSize:'13px', color:'#0D1B2A', fontWeight:'700', marginTop:'4px'}},
+            '매입가 ' + fmt(curPrice) + ' → ',
+            h('span', {style:{color: newPrice !== curPrice ? '#DC2626' : '#047857', fontWeight:'900'}},
+              newPrice != null ? fmt(newPrice) : '단가 없음')
+          ),
+          newPrice == null && h('div', {style:{fontSize:'11px', color:'#DC2626', marginTop:'5px'}},
+            '⚠️ 해당 등급의 단가를 찾을 수 없습니다. 단가표를 확인해주세요.')
+        ),
         h('div', {className:'frow'},
-          h('label', {className:'flabel'}, '수정 사유'),
+          h('label', {className:'flabel'}, isSame && props.currentGrade ? '확정 사유' : '검수 사유'),
           h('textarea', {className:'ftext',
-            placeholder:'예: 후면 하단 모서리 육안 확인되는 찍힘 있어 Normal로 하향',
-            value:reason, onChange:function(e){setReason(e.target.value);}
+            placeholder: !props.currentGrade
+              ? '예: 입고 검수 결과 후면 미세 스크래치 2개, Good 으로 확정'
+              : isSame
+                ? '예: 사진 재확인 결과 AI 판정대로 Very Good 이 맞아 그대로 확정'
+                : '예: 후면 하단 모서리 육안 확인되는 찍힘 있어 Normal로 하향',
+            value:reason, onChange:function(e){setReason(e.target.value);setErr('');}
           })
         ),
         err && h('div', {className:'al al-err'}, '⚠️ ' + err),
         h('button', {className:'btn-p', disabled:loading, onClick:submit},
-          loading ? '저장 중...' : '수정 확정'
+          loading ? '저장 중...' : (!props.currentGrade ? '등급 확정' : (isSame ? '이대로 확정' : '변경하여 확정'))
         )
       )
     )
@@ -336,6 +367,8 @@ function DetailModal(props){
   return h('div', {className:'modal-bg', onClick:props.onClose},
     showChange && h(GradeChangeModal, {
       currentGrade: grade,
+      currentPrice: lookupPrice(r),
+      priceInfo: r.result && r.result.price_info,
       onClose: function(){setShowChange(false);},
       onSubmit: submitGradeChange
     }),
@@ -350,6 +383,27 @@ function DetailModal(props){
         h('button', {className:'modal-x', onClick:props.onClose}, '✕')
       ),
       h('div', {className:'modal-b'},
+        // v24: 간편접수 안내
+        r.receiptType === 'simple' && h('div', {style:{background:'#EFF6FF', border:'1px solid #BFDBFE',
+            borderRadius:'12px', padding:'14px 16px', marginBottom:'14px'}},
+          h('div', {style:{fontWeight:'800', fontSize:'13px', color:'#1E40AF', marginBottom:'6px'}},
+            r.reviewedAt ? '📦 간편접수 — 검수 완료' : '📦 간편접수 — 입고 대기'),
+          h('div', {style:{fontSize:'12px', color:'#1E3A8A', lineHeight:'1.65'}},
+            '고객이 촬영 없이 모델·용량만 선택해 접수한 건입니다.', h('br'),
+            '단말기 입고 후 검수하여 등급을 확정하고 고객에게 발송하세요.'),
+          h('div', {style:{marginTop:'10px', padding:'10px 12px', background:'#fff', borderRadius:'9px', fontSize:'12px'}},
+            h('div', {style:{padding:'2px 0'}}, h('strong', null, '신청 모델'), ' : ',
+              ((r.result && r.result.device_info && r.result.device_info.model_name) || '-'),
+              ' ', ((r.result && r.result.device_info && r.result.device_info.storage) || '')),
+            h('div', {style:{padding:'2px 0'}}, h('strong', null, 'IMEI'), ' : ',
+              ((r.result && r.result.device_info && r.result.device_info.imei) || '미입력')),
+            h('div', {style:{padding:'2px 0'}}, h('strong', null, '택배 접수'), ' : ',
+              r.pickupRequestedAt ? fmtDate(r.pickupRequestedAt) : '-')
+          ),
+          !r.reviewedAt && h('div', {style:{marginTop:'10px', fontSize:'12px', color:'#1E3A8A', fontWeight:'600'}},
+            '⚠️ 아래 [등급 확정]으로 등급을 정한 뒤 고객에게 발송할 수 있습니다.')
+        ),
+
         // v23: 신뢰도 / 라우팅
         (function(){
           var cd = r.confidenceDetail || (r.result && r.result.confidence_detail) || null;
@@ -394,13 +448,18 @@ function DetailModal(props){
             ' (', r.holderName||'', ')')
         ),
 
-        // 발송 버튼
-        !r.sentAt && h('button', {
-          style:{width:'100%', background:'#00C473', color:'#fff', border:'none', borderRadius:'10px',
-                 padding:'13px 0', fontSize:'14px', fontWeight:'800', cursor:'pointer',
-                 fontFamily:'inherit', marginBottom:'14px'},
-          onClick: sendToCustomer
-        }, '📨 고객에게 판정결과 발송'),
+        // 발송 버튼 (간편접수는 등급 확정 전까지 비활성)
+        !r.sentAt && (function(){
+          var blocked = (r.receiptType === 'simple' && !r.reviewedAt);
+          return h('button', {
+            disabled: blocked,
+            style:{width:'100%', background: blocked ? '#CBD5E1' : '#00C473', color:'#fff', border:'none',
+                   borderRadius:'10px', padding:'13px 0', fontSize:'14px', fontWeight:'800',
+                   cursor: blocked ? 'not-allowed' : 'pointer',
+                   fontFamily:'inherit', marginBottom:'14px'},
+            onClick: blocked ? null : sendToCustomer
+          }, blocked ? '📨 등급 확정 후 발송 가능' : '📨 고객에게 판정결과 발송');
+        })(),
 
         r.sentAt && h('div', {style:{background:'#ECFDF5', border:'1px solid #A7F3D0', borderRadius:'10px',
           padding:'11px 13px', fontSize:'12px', color:'#065F46', marginBottom:'14px', fontWeight:'600'}},
@@ -408,9 +467,12 @@ function DetailModal(props){
 
         // 검수 이력 표시
         isReviewed && h('div', {className:'review-info'},
-          '⚡ ',h('strong',null,'검수 수정 이력'),h('br'),
-          '원본 AI 판정: ', h('strong',null, r.originalGrade), ' → 수정 등급: ', h('strong',null, r.reviewedGrade),h('br'),
-          '수정자: ', h('strong',null, r.reviewedBy || '-'), ' · ', fmtDate(r.reviewedAt),h('br'),
+          '⚡ ', h('strong', null, r.gradeChanged === false ? '검수 확정 이력 (등급 유지)' : '검수 확정 이력'), h('br'),
+          'AI 판정: ', h('strong', null, r.originalGrade),
+          ' → 확정 등급: ', h('strong', null, r.reviewedGrade),
+          r.gradeChanged === false && h('span', null, '  (동일)'), h('br'),
+          '확정 매입가: ', h('strong', null, fmt(r.finalPrice)), h('br'),
+          '검수자: ', h('strong', null, r.reviewedBy || '-'), ' · ', fmtDate(r.reviewedAt), h('br'),
           '사유: ', r.reviewNote || '-'
         ),
         // 등급 & 매입가
@@ -471,7 +533,7 @@ function DetailModal(props){
         ),
         // 액션 버튼
         h('div', {className:'modal-actions'},
-          h('button', {className:'btn-warn', onClick:function(){setShowChange(true);}}, '⚡ 등급 수정'),
+          h('button', {className:'btn-warn', onClick:function(){setShowChange(true);}}, '⚡ 등급 확정'),
           h('button', {className:'btn-danger', onClick:del}, '🗑️ 삭제'),
           h('button', {className:'btn-sk', onClick:props.onClose, style:{marginLeft:'auto'}}, '닫기')
         )
@@ -529,7 +591,8 @@ function Dashboard(props){
       var model = r.result && r.result.device_info && r.result.device_info.model_name || '';
       var name = r.customerName || '';
       var phone = r.customerPhone || '';
-      var status = r.route === 'review' && !r.reviewedAt ? 'pending'
+      var status = r.receiptType === 'simple' && !r.reviewedAt ? 'simple'
+                 : r.route === 'review' && !r.reviewedAt ? 'pending'
                  : r.reviewedGrade ? 'reviewed'
                  : r.sentAt ? 'sent' : 'ai';
 
@@ -553,6 +616,7 @@ function Dashboard(props){
     var total = list.length;
     var reviewed = list.filter(function(r){return !!r.reviewedGrade;}).length;
     var pending = list.filter(function(r){return r.route==='review' && !r.reviewedAt;}).length;
+    var simple = list.filter(function(r){return r.receiptType==='simple' && !r.reviewedAt;}).length;
     var sent = list.filter(function(r){return !!r.sentAt;}).length;
     var totalPrice = 0;
     var gradeCount = {};
@@ -564,7 +628,7 @@ function Dashboard(props){
         if(p) totalPrice += p;
       }
     });
-    return {total: total, reviewed: reviewed, pending: pending, sent: sent,
+    return {total: total, reviewed: reviewed, pending: pending, simple: simple, sent: sent,
             totalPrice: totalPrice, gradeCount: gradeCount};
   }, [list]);
 
@@ -642,6 +706,13 @@ function Dashboard(props){
           h('div', {className:'stat-v', style: stats.pending>0 ? {color:'#C2410C'} : {}}, stats.pending),
           h('div', {className:'stat-s'}, '건 · 신뢰도 85% 미만')
         ),
+        h('div', {className:'stat', style: stats.simple>0 ? {background:'#EFF6FF', borderColor:'#BFDBFE'} : {},
+            onClick:function(){setFilterStatus(stats.simple>0 && filterStatus!=='simple' ? 'simple' : '');},
+            title:'클릭하면 간편접수(입고 대기) 건만 봅니다'},
+          h('div', {className:'stat-l', style: stats.simple>0 ? {color:'#1E40AF'} : {}}, '📦 간편접수'),
+          h('div', {className:'stat-v', style: stats.simple>0 ? {color:'#1E40AF'} : {}}, stats.simple),
+          h('div', {className:'stat-s'}, '건 · 입고 대기')
+        ),
         h('div', {className:'stat'},
           h('div', {className:'stat-l'}, '고객 발송'),
           h('div', {className:'stat-v'}, stats.sent),
@@ -673,6 +744,7 @@ function Dashboard(props){
         ),
         h('select', {value:filterStatus, onChange:function(e){setFilterStatus(e.target.value);}},
           h('option', {value:''}, '전체 상태'),
+          h('option', {value:'simple'}, '📦 간편접수 (입고 대기)'),
           h('option', {value:'pending'}, '🔍 검수 대기'),
           h('option', {value:'ai'}, '✅ AI 확정'),
           h('option', {value:'reviewed'}, '⚡ 검수 완료'),
@@ -721,13 +793,16 @@ function Dashboard(props){
                 var phone = r.customerPhone || '-';
                 var isReviewed = !!r.reviewedGrade;
                 var conf = r.confidenceScore;
+                var isSimple = r.receiptType === 'simple';
+                var isAwaiting = isSimple && !r.reviewedAt;
                 var isPending = r.route === 'review' && !r.reviewedAt;
-                var statusLabel = isPending ? '🔍 검수대기'
+                var statusLabel = isAwaiting ? '📦 입고대기'
+                                : isPending ? '🔍 검수대기'
                                 : r.paidAt ? '💰 입금완료'
                                 : r.sentAt ? '📨 발송완료'
                                 : isReviewed ? '⚡ 검수완료' : '✅ AI확정';
                 return h('tr', {key:r.receiptNumber, onClick:function(){openDetail(r.receiptNumber);},
-                    style: isPending ? {background:'#FFFBF5'} : {}},
+                    style: isAwaiting ? {background:'#F7FBFF'} : isPending ? {background:'#FFFBF5'} : {}},
                   h('td', null, h('span', {className:'tbl-num'}, r.receiptNumber)),
                   h('td', {style:{fontSize:'12px', color:'#64748B'}}, fmtDate(r.createdAt)),
                   h('td', null,
@@ -736,15 +811,16 @@ function Dashboard(props){
                         h('img', {className:'tbl-thumb', src:thumb, alt:'p'}),
                         photoCount>1 && h('div', {style:{position:'absolute', bottom:'-4px', right:'-4px', background:'#0D1B2A', color:'#fff', fontSize:'9px', fontWeight:'800', padding:'1px 5px', borderRadius:'8px'}}, '+'+(photoCount-1))
                       )
-                    : h('div', {className:'tbl-thumb-empty'}, '📷')
+                    : h('div', {className:'tbl-thumb-empty'}, isSimple ? '📦' : '📷')
                   ),
                   h('td', {style:{fontWeight:'600'}}, name),
                   h('td', {style:{fontSize:'12px', color:'#4A5568'}}, phone),
                   h('td', {style:{fontSize:'12px'}}, model),
                   h('td', null,
-                    h('span', {className:'gr-pill', style:{background:cfg.bg, color:cfg.color}},
-                      cfg.emoji + ' ' + (grade||'-')
-                    )
+                    grade
+                      ? h('span', {className:'gr-pill', style:{background:cfg.bg, color:cfg.color}},
+                          cfg.emoji + ' ' + grade)
+                      : h('span', {style:{fontSize:'11px', color:'#94A3B8'}}, '판정 전')
                   ),
                   h('td', null,
                     conf != null
@@ -760,7 +836,8 @@ function Dashboard(props){
                   ),
                   h('td', null,
                     h('span', {className:'stat-pill ' + (isReviewed?'reviewed':''),
-                      style: isPending ? {background:'#FFF7ED', color:'#C2410C', border:'1px solid #FED7AA'} : {}},
+                      style: isAwaiting ? {background:'#EFF6FF', color:'#1E40AF', border:'1px solid #BFDBFE'}
+                           : isPending ? {background:'#FFF7ED', color:'#C2410C', border:'1px solid #FED7AA'} : {}},
                       statusLabel
                     )
                   )
